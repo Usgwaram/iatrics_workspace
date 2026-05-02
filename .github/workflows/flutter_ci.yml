@@ -1,0 +1,43 @@
+name: Iatrics CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  flutter_test:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
+      - name: Install dependencies (Provider App)
+        working-directory: iatrics_provider_app
+        run: flutter pub get
+
+      - name: Install dependencies (User App)
+        working-directory: iatrics_user_app
+        run: flutter pub get
+
+      - name: Run unit tests (Provider)
+        working-directory: iatrics_provider_app
+        run: flutter test
+
+      - name: Run integration tests (Provider - MOCK MODE)
+        working-directory: iatrics_provider_app
+        run: flutter test integration_test --dart-define=ENV=test
+
+      - name: Run unit tests (User)
+        working-directory: iatrics_user_app
+        run: flutter test
+
+      - name: Run integration tests (User - MOCK MODE)
+        working-directory: iatrics_user_app
+        run: flutter test integration_test --dart-define=ENV=test

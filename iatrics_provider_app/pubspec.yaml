@@ -1,0 +1,35 @@
+name: iatrics_provider_app
+description: "Iatrics Provider App for Video Consultations"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.2.0
+  flutter: '>=3.22.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^1.4.0
+  flutter_secure_storage: ^10.0.0
+  agora_rtc_engine: ^6.5.2
+  permission_handler: ^12.0.1
+  audioplayers: ^6.6.0
+  socket_io_client: ^3.1.4
+  provider: ^6.0.0
+
+dev_dependencies:
+  integration_test:
+    sdk: flutter
+
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+assets:
+  - assets/audio/ringtone.mp3
+
+

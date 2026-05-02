@@ -1,0 +1,8 @@
+{
+  "id": "iatrics-env",
+  "name": "Iatrics Env",
+  "values": [
+    { "key": "base_url", "value": "http://localhost:5002", "enabled": true },
+    { "key": "token", "value": "", "enabled": true }
+  ]
+}

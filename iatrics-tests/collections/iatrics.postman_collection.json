@@ -1,0 +1,153 @@
+{
+  "info": {
+    "name": "Iatrics API Test (Fixed)",
+    "_postman_id": "12345",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5002/api" },
+    { "key": "email", "value": "test_{{$timestamp}}@mail.com" },
+    { "key": "password", "value": "123456" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+
+    {
+      "name": "1. Register User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Registered', function () {",
+              "    pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"fullName\":\"Test User\",\"email\":\"{{email}}\",\"password\":\"{{password}}\"}"
+        },
+        "url": {
+          "raw": "{{base_url}}/users/register",
+          "host": ["{{base_url}}"],
+          "path": ["users", "register"]
+        }
+      }
+    },
+
+    {
+      "name": "2. Login User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "pm.environment.set('token', res.token);",
+              "pm.test('Login success', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"{{email}}\",\"password\":\"{{password}}\"}"
+        },
+        "url": {
+          "raw": "{{base_url}}/users/login",
+          "host": ["{{base_url}}"],
+          "path": ["users", "login"]
+        }
+      }
+    },
+
+    {
+      "name": "3. Initialize Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"{{email}}\",\"amount\":5000}"
+        },
+        "url": {
+          "raw": "{{base_url}}/paystack/initialize",
+          "host": ["{{base_url}}"],
+          "path": ["paystack", "initialize"]
+        }
+      }
+    },
+
+    {
+      "name": "4. Simulate Paystack Webhook",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "x-paystack-signature", "value": "test_signature" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"event\": \"charge.success\",\n  \"data\": {\n    \"reference\": \"REF_{{$timestamp}}\",\n    \"amount\": 500000,\n    \"status\": \"success\",\n    \"customer\": {\n      \"email\": \"{{email}}\"\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/webhook/paystack",
+          "host": ["{{base_url}}"],
+          "path": ["webhook", "paystack"]
+        }
+      }
+    },
+
+    {
+      "name": "5. Check Wallet Balance",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/wallet/balance",
+          "host": ["{{base_url}}"],
+          "path": ["wallet", "balance"]
+        }
+      }
+    },
+
+    {
+      "name": "6. Request Withdrawal",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"{{email}}\",\"amount\":2000,\"accountNumber\":\"1234567890\",\"bankCode\":\"058\"}"
+        },
+        "url": {
+          "raw": "{{base_url}}/withdrawals/request",
+          "host": ["{{base_url}}"],
+          "path": ["withdrawals", "request"]
+        }
+      }
+    }
+
+  ]
+}

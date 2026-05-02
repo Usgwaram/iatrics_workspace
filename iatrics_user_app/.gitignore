@@ -1,0 +1,75 @@
+# -----------------------------
+# Global Settings
+# -----------------------------
+.DS_Store
+*.swp
+*.log
+*.tmp
+
+# -----------------------------
+# Flutter / Dart (iatrics_user_app)
+# -----------------------------
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/ios/Flutter/.last_build_id
+**/doc/api/
+
+# Android
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# Obfuscation & Symbolication
+**/app.*.map.json
+**/app.*.symbols
+
+# -----------------------------
+# Node.js (iatrics_backend)
+# -----------------------------
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Environment
+**/.env
+
+# Sequelize / ORM
+**/models/*.js.map
+**/sequelize-meta.json
+
+# -----------------------------
+# Editor / IDE
+# -----------------------------
+.idea/
+.vscode/
+*.iml
+
+# -----------------------------
+# Docker
+# -----------------------------
+Dockerfile
+.dockerignore
+
+# -----------------------------
+# Miscellaneous
+# -----------------------------
+*.class
+*.pyc
+*.pyo
+*.exe
+*.out
+*.app
+*.pid
+*.seed
+*.pid.lock
+
+# MacOS Finder files
+._*
+.Spotlight-V100
+.Trashes

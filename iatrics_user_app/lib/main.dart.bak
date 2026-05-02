@@ -1,0 +1,43 @@
+import 'package:flutter/material.dart';
+import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/book_doctor_screen.dart';
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Iatrics User App',
+      theme: ThemeData(primarySwatch: Colors.teal),
+      home: const LoginScreen(),
+      routes: {
+        '/register': (_) => RegisterScreen(),
+        '/home': (_) => const HomeScreen(),
+      },
+    );
+  }
+}
+
+
+
+
+class BookingApp extends StatelessWidget {
+  const BookingApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Doctor Booking',
+      theme: ThemeData(primarySwatch: Colors.teal),
+      home: const BookDoctorScreen(),
+    );
+  }
+}
+
+
