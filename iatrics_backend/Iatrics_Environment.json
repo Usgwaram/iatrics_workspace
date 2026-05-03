@@ -1,0 +1,24 @@
+{
+  "id": "iatrics-env-001",
+  "name": "Iatrics Environment",
+  "values": [
+    { "key": "base_url", "value": "https://api.iatrics.ng", "enabled": true },
+
+    { "key": "token", "value": "", "enabled": true },
+    { "key": "provider_token", "value": "", "enabled": true },
+
+    { "key": "user_id", "value": "", "enabled": true },
+    { "key": "provider_id", "value": "", "enabled": true },
+
+    { "key": "last_registered_email", "value": "", "enabled": true },
+    { "key": "last_registered_password", "value": "123456", "enabled": true },
+
+    { "key": "reference", "value": "", "enabled": true },
+    { "key": "consultation_id", "value": "", "enabled": true },
+
+    { "key": "channel_name", "value": "test_room_001", "enabled": true }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-04-22T00:00:00.000Z",
+  "_postman_exported_using": "Postman"
+}

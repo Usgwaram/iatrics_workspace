@@ -1,0 +1,212 @@
+{
+  "info": {
+    "name": "Iatrics Production Tests",
+    "_postman_id": "iatrics-collection-001",
+    "description": "End-to-end API testing for Iatrics platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://api.iatrics.ng" },
+    { "key": "token", "value": "" },
+    { "key": "provider_token", "value": "" },
+    { "key": "user_id", "value": "" },
+    { "key": "provider_id", "value": "" },
+    { "key": "reference", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Register User",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"testuser{{$timestamp}}@mail.com\",\n  \"password\": \"123456\",\n  \"referralCode\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "register"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('User registered', () => pm.response.to.have.status(201));",
+              "let res = pm.response.json();",
+              "pm.environment.set('user_id', res.user.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login User",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"testuser@mail.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login successful', () => pm.response.to.have.status(200));",
+              "let res = pm.response.json();",
+              "pm.environment.set('token', res.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Provider Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"provider@mail.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["api", "auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let res = pm.response.json();",
+              "pm.environment.set('provider_token', res.token);",
+              "pm.environment.set('provider_id', res.user.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Paystack Subaccount Setup",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{provider_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/providers/{{provider_id}}/paystack-setup",
+          "host": ["{{base_url}}"],
+          "path": ["api", "providers", "{{provider_id}}", "paystack-setup"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Subaccount created', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Initialize Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 5000,\n  \"providerId\": \"{{provider_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/payments/initialize",
+          "host": ["{{base_url}}"],
+          "path": ["api", "payments", "initialize"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let res = pm.response.json();",
+              "pm.environment.set('reference', res.data.reference);",
+              "pm.test('Payment initialized', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verify Payment",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/payments/verify/{{reference}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "payments", "verify", "{{reference}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Payment verified', () => pm.response.to.have.status(200));",
+              "let res = pm.response.json();",
+              "pm.test('MLM triggered', () => pm.expect(res.mlmProcessed).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Consultation",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"providerId\": \"{{provider_id}}\",\n  \"type\": \"video\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/consultations",
+          "host": ["{{base_url}}"],
+          "path": ["api", "consultations"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Consultation created', () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: iatrics-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        value: usman
+      - key: AGORA_APP_ID
+        value: 114a1c0095cc4175ada6e0b2082d7c3d
+      - key: AGORA_CERTIFICATE
+        value: 4b3ab9f662434c43bcd6924197c91a74

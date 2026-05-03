@@ -1,0 +1,213 @@
+const {
+  Consultation,
+  UserWallet,
+  ProviderWallet,
+  PlatformWallet,
+  LedgerEntry,
+} = require("../models");
+
+const PLATFORM_COMMISSION = 0.2;
+const PROVIDER_SHARE = 0.8;
+
+module.exports = (io) => {
+  const users = new Map();
+  const providers = new Map();
+
+  io.on("connection", (socket) => {
+    console.log("🟢 Socket connected:", socket.id);
+
+    // =========================
+    // REGISTER USER
+    // =========================
+    socket.on("register-user", (userId) => {
+      users.set(userId, socket.id);
+      socket.join(`user-${userId}`);
+    });
+
+    // =========================
+    // REGISTER PROVIDER
+    // =========================
+    socket.on("register-provider", (providerId) => {
+      providers.set(providerId.toString(), socket.id);
+    });
+
+    // =========================
+    // PLACE CALL
+    // =========================
+    socket.on("place-call", async (data) => {
+      const { userId, providerId, channelName } = data;
+
+      await Consultation.create({
+        userId,
+        providerId,
+        channelName,
+        status: "active",
+        duration: 0,
+        cost: 0,
+      });
+
+      const providerSocket = providers.get(providerId.toString());
+
+      if (providerSocket) {
+        io.to(providerSocket).emit("incoming-call", data);
+      }
+    });
+
+    // =========================
+    // ACCEPT CALL
+    // =========================
+    socket.on("accept-call", (data) => {
+      const userSocket = users.get(data.userId.toString());
+      if (userSocket) {
+        io.to(userSocket).emit("call-accepted", data);
+      }
+    });
+
+    // =========================
+    // DECLINE CALL
+    // =========================
+    socket.on("decline-call", (data) => {
+      const userSocket = users.get(data.userId.toString());
+      if (userSocket) {
+        io.to(userSocket).emit("call-declined", data);
+      }
+    });
+
+    // =========================
+    // 💰 BILLING TICK
+    // =========================
+    socket.on("billing-tick", async ({ channelName }) => {
+      try {
+        const session = await Consultation.findOne({
+          where: { channelName },
+        });
+
+        if (!session || session.status !== "active") return;
+
+        const amount = 50;
+
+        const userWallet = await UserWallet.findOne({
+          where: { userId: session.userId },
+        });
+
+        if (!userWallet || userWallet.balance < amount) {
+          io.to(`user-${session.userId}`).emit("call-ended", {
+            reason: "insufficient_balance",
+          });
+
+          const providerSocket = providers.get(
+            session.providerId.toString()
+          );
+
+          if (providerSocket) {
+            io.to(providerSocket).emit("call-ended", {
+              reason: "user_no_funds",
+            });
+          }
+
+          await session.update({
+            status: "ended",
+            endedAt: new Date(),
+          });
+
+          return;
+        }
+
+        const platformCut = amount * PLATFORM_COMMISSION;
+        const providerCut = amount * PROVIDER_SHARE;
+
+        // USER DEDUCTION
+        userWallet.balance -= amount;
+        await userWallet.save();
+
+        io.to(`user-${session.userId}`).emit("wallet-update", {
+          balance: userWallet.balance,
+        });
+
+        // PROVIDER CREDIT
+        const providerWallet = await ProviderWallet.findOne({
+          where: { providerId: session.providerId },
+        });
+
+        if (providerWallet) {
+          providerWallet.balance += providerCut;
+          await providerWallet.save();
+
+          const providerSocket = providers.get(
+            session.providerId.toString()
+          );
+
+          if (providerSocket) {
+            io.to(providerSocket).emit("wallet-update", {
+              balance: providerWallet.balance,
+            });
+          }
+        }
+
+        // PLATFORM
+        await PlatformWallet.increment(
+          { balance: platformCut },
+          { where: { id: 1 } }
+        );
+
+        session.duration += 10;
+        session.cost += amount;
+        await session.save();
+
+        await LedgerEntry.create({
+          reference: `TXN_${Date.now()}`,
+          type: "debit",
+          amount,
+          userId: session.userId,
+          channelName,
+          source: "consultation",
+        });
+
+        await LedgerEntry.create({
+          reference: `TXN_${Date.now() + 1}`,
+          type: "earning",
+          amount: providerCut,
+          providerId: session.providerId,
+          channelName,
+          source: "consultation",
+        });
+
+      } catch (err) {
+        console.error("❌ Billing error:", err);
+      }
+    });
+
+    // =========================
+    // END CALL
+    // =========================
+    socket.on("end-call", async (data) => {
+      const session = await Consultation.findOne({
+        where: { channelName: data.channelName },
+      });
+
+      if (session) {
+        await session.update({
+          status: "completed",
+          endedAt: new Date(),
+        });
+      }
+
+      io.emit("call-ended", data.channelName);
+    });
+
+    // =========================
+    // DISCONNECT
+    // =========================
+    socket.on("disconnect", () => {
+      console.log("🔴 Disconnected:", socket.id);
+
+      for (const [key, value] of users.entries()) {
+        if (value === socket.id) users.delete(key);
+      }
+
+      for (const [key, value] of providers.entries()) {
+        if (value === socket.id) providers.delete(key);
+      }
+    });
+  });
+};
