@@ -50,7 +50,7 @@ app.use(express.json());
 app.use("/api/auth", require("./src/routes/authRoutes"));
 app.use("/api/users", require("./src/routes/userRoutes"));
 app.use("/api/providers", require("./src/routes/providerRoutes"));
-app.use("/api/consultations", require("./src/routes/consultation"));
+app.use("/api/consultations", require("./src/routes/Consultation"));
 app.use("/api/withdrawals", withdrawalRoutes);
 app.use("/api/webhook", webhookRoutes);
 app.use("/api/paystack", require("./src/routes/paystack"));
