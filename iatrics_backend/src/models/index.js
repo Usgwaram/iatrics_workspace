@@ -24,7 +24,7 @@ const DataTypes = Sequelize.DataTypes;
 
 // ✅ LOAD MODELS AFTER sequelize is ready
 db.User = require("./User")(sequelize, DataTypes);
-db.Provider = require("./provider")(sequelize, DataTypes);
+db.Provider = require("./Provider")(sequelize, DataTypes);
 
 // ✅ ADD YOUR NEW MODEL HERE (AFTER sequelize exists)
 db.WalletTransaction = require("./walletTransaction")(sequelize, DataTypes);
