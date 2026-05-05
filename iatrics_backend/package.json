@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
-    "dev": "nodemon --legacy-watch server.js",
+    "dev": "nodemon server.js",
     "start": "node server.js",
     "seed": "node src/seeders/adminSeeder.js",
     "test": "jest --runInBand"

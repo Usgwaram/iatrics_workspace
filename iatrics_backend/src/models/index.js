@@ -23,7 +23,7 @@ const DataTypes = Sequelize.DataTypes;
 
 
 // ✅ LOAD MODELS AFTER sequelize is ready
-db.User = require("./user")(sequelize, DataTypes);
+db.User = require("./User")(sequelize, DataTypes);
 db.Provider = require("./provider")(sequelize, DataTypes);
 
 // ✅ ADD YOUR NEW MODEL HERE (AFTER sequelize exists)
