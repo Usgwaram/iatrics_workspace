@@ -61,7 +61,7 @@ if (rateLimit) {
 // ======================
 // ROUTES
 // ======================
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", require("./src/routes/authRoutes"));
 app.use("/api/users", userRoutes);
 app.use("/api/providers", providerRoutes);
 app.use("/api/consultations", consultationRoutes);

@@ -9,17 +9,11 @@ const {
 
 const { protect } = require("../middleware/authMiddleware");
 
-// ============================
-// AUTH ROUTES (CLEAN VERSION)
-// ============================
+// AUTH BASE: /api/auth
 
-// REGISTER USER
+// CLEAN AUTH ROUTES
 router.post("/register", register);
-
-// LOGIN USER
 router.post("/login", login);
-
-// GET PROFILE
 router.get("/me", protect, getProfile);
 
 module.exports = router;
