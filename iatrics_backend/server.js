@@ -4,180 +4,98 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
-
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
-const xss = require("xss-clean");
-const hpp = require("hpp");
-
-const cron = require("node-cron");
-
 const db = require("./src/models");
+
+// routes
+const authRoutes = require("./src/routes/authRoutes");
+const userRoutes = require("./src/routes/userRoutes");
+const providerRoutes = require("./src/routes/providerRoutes");
+const consultationRoutes = require("./src/routes/consultationRoutes") // FIXED CASE
 const withdrawalRoutes = require("./src/routes/withdrawalRoutes");
+const walletRoutes = require("./src/routes/wallet");
+const paystackRoutes = require("./src/routes/paystack");
 const webhookRoutes = require("./src/routes/webhook");
-const { reconcile } = require("./src/services/reconciliationService");
+const agoraRoutes = require("./src/routes/agora");
+
+// security (safe fallback if missing in prod)
+let helmet, rateLimit, xss, hpp, cron;
+
+try {
+  helmet = require("helmet");
+  rateLimit = require("express-rate-limit");
+  xss = require("xss-clean");
+  hpp = require("hpp");
+  cron = require("node-cron");
+} catch (e) {
+  console.log("⚠️ Security packages missing in production mode");
+}
 
 const app = express();
 const server = http.createServer(app);
 
-const PORT = process.env.PORT || 5002;
-
-// ============================
-// TRUST PROXY (RENDER SAFE)
-// ============================
-app.set("trust proxy", 1);
-
-// ============================
-// SECURITY MIDDLEWARE
-// ============================
-app.use(cors());
-app.use(helmet());
-
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-  })
-);
-
-app.use(xss());
-app.use(hpp());
-app.use(express.json());
-
-// ============================
-// ROUTES
-// ============================
-app.use("/api/auth", require("./src/routes/authRoutes"));
-app.use("/api/users", require("./src/routes/userRoutes"));
-app.use("/api/providers", require("./src/routes/providerRoutes"));
-app.use("/api/consultations", require("./src/routes/Consultation"));
-app.use("/api/withdrawals", withdrawalRoutes);
-app.use("/api/webhook", webhookRoutes);
-app.use("/api/paystack", require("./src/routes/paystack"));
-app.use("/api/admin/finance", require("./src/routes/adminFinancialRoutes"));
-app.use("/api/wallet", require("./src/routes/wallet"));
-app.use("/api/agora", require("./src/routes/agora"));
-
-app.use(require("./src/middleware/apiResponseWrapper"));
-
-// ============================
-// HEALTH CHECK (IMPORTANT FOR RENDER)
-// ============================
-app.get("/", (req, res) => {
-  res.status(200).send("🚀 Iatrics API + Socket Running");
-});
-
-// ============================
-// SOCKET SETUP
-// ============================
 const io = new Server(server, {
   cors: { origin: "*" },
 });
 
 app.set("io", io);
-require("./src/sockets/callSocket")(io);
 
-// ============================
-// CRON JOB (SAFE)
-// ============================
-cron.schedule("0 * * * *", async () => {
-  try {
-    console.log("⏰ Running hourly reconciliation...");
-    await reconcile();
-  } catch (err) {
-    console.error("❌ Reconciliation error:", err);
-  }
+// ======================
+// BASIC MIDDLEWARE
+// ======================
+app.use(cors());
+app.use(express.json());
+
+if (helmet) app.use(helmet());
+if (xss) app.use(xss());
+if (hpp) app.use(hpp());
+
+if (rateLimit) {
+  app.use(
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 100,
+    })
+  );
+}
+
+// ======================
+// ROUTES
+// ======================
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/providers", providerRoutes);
+app.use("/api/consultations", consultationRoutes);
+app.use("/api/withdrawals", withdrawalRoutes);
+app.use("/api/wallet", walletRoutes);
+app.use("/api/paystack", paystackRoutes);
+app.use("/api/webhook", webhookRoutes);
+app.use("/api/agora", agoraRoutes);
+
+// health check
+app.get("/", (req, res) => {
+  res.send("🚀 Iatrics API + Socket Running");
 });
 
-// ============================
-// TEST USER SEED (SAFE + NON-BLOCKING)
-// ============================
-const seedTestUsers = async () => {
-  try {
-    const bcrypt = require("bcrypt");
-    const { User } = require("./src/models");
-
-    const users = [
-      { email: "user@test.com", role: "user", name: "Test User" },
-      { email: "provider@test.com", role: "provider", name: "Test Provider" },
-    ];
-
-    for (const u of users) {
-      const exists = await User.findOne({ where: { email: u.email } });
-
-      if (!exists) {
-        await User.create({
-          fullName: u.name,
-          email: u.email,
-          password: await bcrypt.hash("123456", 10),
-          role: u.role,
-        });
-      }
-    }
-
-    console.log("✅ Test users ready");
-  } catch (err) {
-    console.error("❌ Seed error:", err);
-  }
-};
-
-// ============================
-// START SERVER (ROBUST)
-// ============================
+// ======================
+// DB START
+// ======================
 const startServer = async () => {
   try {
-    console.log("🧠 Connecting to database...");
-
+    console.log("🧠 Connecting DB...");
     await db.sequelize.authenticate();
-    console.log("🧠 DB connected successfully");
+    console.log("🧠 DB connected");
 
-    const [result] = await db.sequelize.query("SELECT current_user;");
-    console.log("🧠 Connected as DB user:", result);
+    await db.sequelize.sync();
 
-    console.log(
-      "🔑 PAYSTACK KEY:",
-      process.env.PAYSTACK_SECRET_KEY?.slice(0, 10)
-    );
+    const PORT = process.env.PORT || 5002;
 
-    // ============================
-    // DB SYNC (SAFE MODE ONLY)
-    // ============================
-    if (process.env.NODE_ENV === "development") {
-      if (process.env.DB_RESET === "true") {
-        console.log("⚠️ Resetting DB...");
-        await db.sequelize.sync({ force: true });
-      } else {
-        await db.sequelize.sync();
-      }
-    } else {
-      console.log("🚀 Production mode: skipping auto-sync (safe)");
-    }
-
-    // Seed AFTER DB is ready
-    await seedTestUsers();
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on ${PORT}`);
+    });
 
   } catch (err) {
-    console.error("❌ Startup error (non-fatal):", err);
+    console.error("❌ Startup error:", err);
   }
-
-  // ============================
-  // IMPORTANT: ALWAYS START SERVER
-  // ============================
-  server.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
 };
 
-// ============================
-// GLOBAL ERROR HANDLER
-// ============================
-app.use((err, req, res, next) => {
-  console.error("🔥 ERROR:", err);
-
-  res.status(500).json({
-    error: "Internal Server Error",
-  });
-});
-
-// START APP
 startServer();

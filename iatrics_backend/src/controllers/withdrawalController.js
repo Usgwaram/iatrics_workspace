@@ -1,5 +1,5 @@
 const { User, WalletTransaction, Withdrawal, sequelize } = require("../models");
-const payoutQueue = require("../queues/payoutQueue");
+//const payoutQueue = require("../queues/payoutQueue");
 
 // ============================
 // REQUEST WITHDRAWAL
@@ -10,12 +10,36 @@ exports.requestWithdrawal = async (req, res) => {
   try {
     const { email, amount, accountNumber, bankCode } = req.body;
 
-    const user = await User.findOne({ where: { email }, transaction: t });
+    // ============================
+    // VALIDATION
+    // ============================
+    if (!email || !amount || !accountNumber || !bankCode) {
+      await t.rollback();
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    if (amount <= 0) {
+      await t.rollback();
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    // ============================
+    // FIND USER
+    // ============================
+    const user = await User.findOne({
+      where: { email },
+      transaction: t,
+      lock: t.LOCK.UPDATE, // 🔒 prevents race conditions
+    });
+
     if (!user) {
       await t.rollback();
       return res.status(404).json({ error: "User not found" });
     }
 
+    // ============================
+    // CALCULATE BALANCE
+    // ============================
     const credits =
       (await WalletTransaction.sum("amount", {
         where: { userId: user.id, type: "credit", status: "success" },
@@ -35,7 +59,10 @@ exports.requestWithdrawal = async (req, res) => {
       return res.status(400).json({ error: "Insufficient balance" });
     }
 
-    const reference = `WD_${Date.now()}`;
+    // ============================
+    // CREATE RECORDS
+    // ============================
+    const reference = `WD_${Date.now()}_${user.id}`;
 
     const withdrawal = await Withdrawal.create(
       {
@@ -61,10 +88,21 @@ exports.requestWithdrawal = async (req, res) => {
       { transaction: t }
     );
 
-    await payoutQueue.add("processWithdrawal", {
-      withdrawalId: withdrawal.id,
-    });
+    // ============================
+    // QUEUE OR FALLBACK
+    // ============================
+    if (payoutQueue) {
+      console.log("⚠️ payoutQueue disabled in production");
+    } else {
+      console.log("⚠️ Queue disabled — marking as processing");
 
+      withdrawal.status = "processing";
+      await withdrawal.save({ transaction: t });
+    }
+
+    // ============================
+    // COMMIT
+    // ============================
     await t.commit();
 
     return res.json({
@@ -75,8 +113,11 @@ exports.requestWithdrawal = async (req, res) => {
 
   } catch (err) {
     await t.rollback();
-    console.error("Withdrawal error:", err);
-    res.status(500).json({ error: "Failed" });
+    console.error("❌ Withdrawal error:", err);
+
+    return res.status(500).json({
+      error: "Withdrawal failed",
+    });
   }
 };
 
@@ -87,14 +128,22 @@ exports.getProviderWithdrawals = async (req, res) => {
   try {
     const { providerId } = req.params;
 
+    if (!providerId) {
+      return res.status(400).json({ error: "Provider ID required" });
+    }
+
     const withdrawals = await Withdrawal.findAll({
       where: { userId: providerId },
       order: [["createdAt", "DESC"]],
     });
 
-    res.json(withdrawals);
+    return res.json(withdrawals);
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch withdrawals" });
+    console.error("❌ Fetch withdrawals error:", err);
+
+    return res.status(500).json({
+      error: "Failed to fetch withdrawals",
+    });
   }
 };
