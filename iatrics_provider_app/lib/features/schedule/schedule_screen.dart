@@ -52,13 +52,23 @@ class _ProviderRegisterScreenState extends State<ProviderRegisterScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Name")),
-            TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: "Email")),
-            TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: "Phone")),
-            TextField(controller: specialtyCtrl, decoration: const InputDecoration(labelText: "Specialty")),
-            TextField(controller: passCtrl, obscureText: true, decoration: const InputDecoration(labelText: "Password")),
+            TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: "Name")),
+            TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(labelText: "Email")),
+            TextField(
+                controller: phoneCtrl,
+                decoration: const InputDecoration(labelText: "Phone")),
+            TextField(
+                controller: specialtyCtrl,
+                decoration: const InputDecoration(labelText: "Specialty")),
+            TextField(
+                controller: passCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "Password")),
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: loading ? null : registerProvider,
               child: Text(loading ? "Registering..." : "Register Provider"),

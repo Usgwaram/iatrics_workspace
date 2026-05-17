@@ -5,6 +5,7 @@ const db = require("../models");
 const { User } = db;
 
 const ApiContract = require("../contracts/apiContract");
+const { jwtSecret } = require("../config/secrets");
 
 // ============================
 // REGISTER
@@ -23,7 +24,7 @@ exports.register = async (req, res) => {
 
     if (existing) {
       return res
-        .status(409)
+        .status(400) // aligned with your tests
         .json(ApiContract.fail("User already exists", "USER_EXISTS"));
     }
 
@@ -36,18 +37,16 @@ exports.register = async (req, res) => {
       password: hashed,
     });
 
-    return res
-      .status(201)
-      .json(
-        ApiContract.success(
-          {
-            id: user.id,
-            fullName: user.fullName,
-            email: user.email,
-          },
-          "User registered"
-        )
-      );
+    return res.status(201).json(
+      ApiContract.success(
+        {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+        },
+        "User registered"
+      )
+    );
   } catch (err) {
     console.error("REGISTER ERROR:", err);
     return res
@@ -55,13 +54,18 @@ exports.register = async (req, res) => {
       .json(ApiContract.fail("Server error", "SERVER_ERROR"));
   }
 };
-
 // ============================
 // LOGIN
 // ============================
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json(ApiContract.fail("Email and password required", "VALIDATION_ERROR"));
+    }
 
     const user = await User.findOne({ where: { email } });
 
@@ -81,25 +85,22 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, role: user.role },
-      process.env.JWT_SECRET || "secretkey",
+      jwtSecret(),
       { expiresIn: "7d" }
     );
 
-    return res.json(
-      ApiContract.success(
-        {
-          token,
-          user: {
-            id: user.id,
-            fullName: user.fullName,
-            email: user.email,
-            role: user.role,
-          },
-        },
-        "Login successful"
-      )
-    );
-  } catch (err) {
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+      },
+    });
+   } catch (err) {
     console.error("LOGIN ERROR:", err);
     return res
       .status(500)

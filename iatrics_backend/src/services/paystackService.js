@@ -1,5 +1,6 @@
 const axios = require("axios");
 const { Provider } = require("../models");
+const { paystackSecret } = require("../config/secrets");
 
 const PAYSTACK_BASE = "https://api.paystack.co";
 
@@ -23,7 +24,7 @@ async function createProviderSubaccount(providerId) {
     },
     {
       headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        Authorization: `Bearer ${paystackSecret()}`,
         "Content-Type": "application/json",
       },
     }

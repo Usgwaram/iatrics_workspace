@@ -2,7 +2,7 @@ import 'dart:async';
 
 class SocketSimulator {
   static final StreamController<Map<String, dynamic>> _socket =
-  StreamController.broadcast();
+      StreamController.broadcast();
 
   static Stream<Map<String, dynamic>> get stream => _socket.stream;
 

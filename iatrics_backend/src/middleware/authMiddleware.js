@@ -1,35 +1,34 @@
 const jwt = require("jsonwebtoken");
+const { User } = require("../models");
+const { jwtSecret } = require("../config/secrets");
 
-const protect = (req, res, next) => {
+exports.protect = async (req, res, next) => {
   try {
+    let token;
+
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (authHeader) {
+      token = authHeader;
+    }
+
+    if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, jwtSecret());
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "secretkey"
-    );
+    const user = await User.findByPk(decoded.id);
 
-    req.user = decoded;
+    if (!user) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
 
+    req.user = user;
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
-
-const requireRole = (role) => {
-  return (req, res, next) => {
-    if (!req.user || req.user.role !== role) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    next();
-  };
-};
-
-module.exports = { protect, requireRole };

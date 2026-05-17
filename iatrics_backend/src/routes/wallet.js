@@ -1,22 +1,25 @@
 const express = require("express");
 const router = express.Router();
 
-const auth = require("../middleware/auth");
 const ctrl = require("../controllers/walletController");
+const { protect } = require("../middleware/authMiddleware");
 
-// 💰 Get balance
-router.get("/balance", auth, ctrl.getBalance);
+// GET BALANCE
+router.get("/balance", protect, ctrl.getBalance);
 
-// 💰 Topup wallet
-router.post("/topup", auth, ctrl.topupWallet);
+// GET TRANSACTION HISTORY
+router.get("/transactions", protect, ctrl.getTransactions);
 
-// 💰 Deduct wallet
-router.post("/deduct", auth, ctrl.deductWallet);
+// TOPUP
+router.post("/topup", protect, ctrl.topupWallet);
 
-// 💰 Credit wallet
-router.post("/credit", auth, ctrl.creditWallet);
+// DEDUCT
+router.post("/deduct", protect, ctrl.deductWallet);
 
-// 🔍 Balance by email (admin/debug)
+// CREDIT
+router.post("/credit", protect, ctrl.creditWallet);
+
+// ADMIN DEBUG
 router.get("/balance/:email", ctrl.getBalanceByEmail);
 
 module.exports = router;

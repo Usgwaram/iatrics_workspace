@@ -1,61 +1,172 @@
 const crypto = require("crypto");
-const walletService = require("../services/walletService");
 
+const {
+  sequelize,
+  WalletTransaction,
+  User,
+} = require("../models");
+
+const walletService = require("../services/walletService");
+const {
+  splitPayment,
+} = require("../services/commissionService");
+const { paystackSecret } = require("../config/secrets");
+
+// =====================================
+// PAYSTACK WEBHOOK
+// =====================================
 exports.handleWebhook = async (req, res) => {
+  const tx = await sequelize.transaction();
+
   try {
     console.log("📩 Webhook received");
 
-    const secret = process.env.PAYSTACK_SECRET_KEY;
+    // =====================================
+    // VERIFY SIGNATURE
+    // =====================================
+    const signature =
+      req.headers["x-paystack-signature"];
 
-    // 🔥 IMPORTANT: req.body is BUFFER (NOT object)
     const hash = crypto
-      .createHmac("sha512", secret)
-      .update(req.rawBody)   // ✅ CORRECT
+      .createHmac(
+        "sha512",
+        paystackSecret()
+      )
+      .update(req.rawBody)
       .digest("hex");
 
-    const event = JSON.parse(req.rawBody.toString());
+    if (hash !== signature) {
+      await tx.rollback();
 
-    if (hash !== req.headers["x-paystack-signature"]) {
       console.log("❌ Invalid signature");
-      return res.status(401).send("Invalid signature");
+
+      return res.status(401).json({
+        error: "Invalid signature",
+      });
     }
 
+    // =====================================
+    // PARSE EVENT
+    // =====================================
+    const event = JSON.parse(
+      req.rawBody.toString()
+    );
 
-
+    // Ignore unrelated events
     if (event.event !== "charge.success") {
+      await tx.rollback();
       return res.sendStatus(200);
     }
 
     const data = event.data;
+
     const reference = data.reference;
+
     const amount = data.amount / 100;
-    const email = data.customer.email;
 
-    const existing = await WalletTransaction.findOne({
-      where: { reference },
-    });
+    const email =
+      data.customer?.email;
 
-    if (existing) return res.sendStatus(200);
+    const userId =
+      data.metadata?.userId;
+    const providerId =
+      data.metadata?.providerId;
+    const consultationId =
+      data.metadata?.consultationId;
 
-    const user = await User.findOne({ where: { email } });
-    if (!user) return res.sendStatus(200);
+    // =====================================
+    // IDEMPOTENCY CHECK
+    // =====================================
+    const existing =
+      await WalletTransaction.findOne({
+        where: { reference },
+        transaction: tx,
+        lock: tx.LOCK.UPDATE,
+      });
 
-    const { splitPayment } = require("../services/commissionService");
+    if (existing) {
+      await tx.rollback();
 
-    // Instead of direct credit:
-    await splitPayment({
-      userId: user.id,
-      providerId: user.id, // adjust when consultation exists
-      amount,
-      reference,
-    });
+      console.log(
+        "⚠️ Transaction already processed"
+      );
 
-    console.log("💰 Wallet credited:", amount);
+      return res.status(200).json({
+        message: "Already processed",
+      });
+    }
+
+    // =====================================
+    // FIND USER
+    // =====================================
+    let user = null;
+
+    if (userId) {
+      user = await User.findByPk(userId, {
+        transaction: tx,
+      });
+    }
+
+    if (!user && email) {
+      user = await User.findOne({
+        where: { email },
+        transaction: tx,
+      });
+    }
+
+    if (!user) {
+      await tx.rollback();
+
+      console.log("❌ User not found");
+
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    if (providerId) {
+      await splitPayment({
+        userId: user.id,
+        providerId,
+        amount,
+        reference,
+        consultationId,
+        tx,
+      });
+    } else {
+      // =====================================
+      // WALLET TOP-UP: CREDIT FULL AMOUNT
+      // =====================================
+      await walletService.creditWallet({
+        userId: user.id,
+        amount,
+        reference,
+        source: "paystack",
+        tx,
+      });
+    }
+
+    // =====================================
+    // COMMIT
+    // =====================================
+    await tx.commit();
+
+    console.log(
+      `💰 Wallet credited: ₦${amount}`
+    );
 
     return res.sendStatus(200);
 
   } catch (err) {
-    console.error("❌ Webhook error:", err);
-    return res.sendStatus(500);
+    await tx.rollback();
+
+    console.error(
+      "❌ Webhook error:",
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message,
+    });
   }
 };

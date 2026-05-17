@@ -1,8 +1,14 @@
 const axios = require("axios");
+const { paystackSecret } = require("../config/secrets");
 
 exports.initializePayment = async (req, res) => {
   try {
-    const { email, amount } = req.body;
+    const { email, amount, providerId, consultationId, purpose } = req.body;
+    const metadata = {
+      ...(providerId ? { providerId } : {}),
+      ...(consultationId ? { consultationId } : {}),
+      purpose: purpose || (providerId ? "consultation" : "wallet_topup"),
+    };
 
     // 🧪 TEST MODE
     if (process.env.NODE_ENV !== "production") {
@@ -14,6 +20,8 @@ exports.initializePayment = async (req, res) => {
         data: {
           authorization_url: "https://mock.paystack/authorize",
           reference: "mock_ref_123",
+          amount,
+          metadata,
         },
       });
     }
@@ -26,10 +34,11 @@ exports.initializePayment = async (req, res) => {
       {
         email,
         amount: amount * 100,
+        metadata,
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          Authorization: `Bearer ${paystackSecret()}`,
         },
       }
     );

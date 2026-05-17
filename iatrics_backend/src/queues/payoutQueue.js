@@ -1,13 +1,11 @@
-//const { Queue } = require("bullmq");
-//const IORedis = require("ioredis");
+let payoutQueue = null;
 
-// Redis connection
-//const connection = new IORedis(process.env.REDIS_URL || undefined);
+if (process.env.REDIS_URL) {
+  const { Queue } = require("bullmq");
+  const IORedis = require("ioredis");
 
-// Create queue
-//const payoutQueue = new Queue("payoutQueue", {
-  //connection,
-});
+  const connection = new IORedis(process.env.REDIS_URL);
+  payoutQueue = new Queue("payoutQueue", { connection });
+}
 
-// Export queue
-//module.exports = payoutQueue;
+module.exports = payoutQueue;

@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { jwtSecret } = require("../config/secrets");
 
 module.exports = (req, res, next) => {
   try {
@@ -8,7 +9,7 @@ module.exports = (req, res, next) => {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, jwtSecret());
 
     if (decoded.role !== "admin") {
       return res.status(403).json({ message: "Access denied" });

@@ -8,7 +8,10 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "seed": "node src/seeders/adminSeeder.js",
-    "test": "jest --runInBand"
+    "db:repair-consultations": "node scripts/repairConsultationSchema.js",
+    "test": "jest --runInBand",
+    "load:consultations": "k6 run load-tests/consultations.k6.js",
+    "stress:consultations": "K6_SCENARIO=stress k6 run load-tests/consultations.k6.js"
   },
   "dependencies": {
     "agora-access-token": "^2.0.4",
@@ -19,7 +22,6 @@
     "bullmq": "^5.76.5",
     "cors": "^2.8.6",
     "crypto": "^1.0.1",
-    "dotenv": "^16.6.1",
     "express": "^4.22.1",
     "express-rate-limit": "^8.5.0",
     "express-validator": "^7.3.2",
@@ -31,14 +33,16 @@
     "multer": "^2.0.1",
     "newman-reporter-html": "^1.0.5",
     "node-cron": "^4.2.1",
-    "pg": "^8.20.0",
-    "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.8",
     "socket.io": "^4.8.3",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
-    "jest": "^30.3.0",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
+    "jest": "^30.4.2",
+    "pg": "^8.20.0",
+    "pg-hstore": "^2.3.4",
     "sequelize-cli": "^6.6.2",
     "supertest": "^7.2.2"
   }

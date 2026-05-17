@@ -1,10 +1,44 @@
-const db = require("../models");
-const { Consultation, Provider } = db;
+const { Provider, Consultation } = require("../models");
 
+let consultationColumns;
+let consultationForeignTables;
+
+async function getConsultationColumns() {
+  if (!consultationColumns) {
+    const description =
+      await Consultation.sequelize.getQueryInterface().describeTable("Consultations");
+    consultationColumns = new Set(Object.keys(description));
+  }
+
+  return consultationColumns;
+}
+
+async function getConsultationForeignTables() {
+  if (!consultationForeignTables) {
+    const [rows] = await Consultation.sequelize.query(`
+      SELECT
+        a.attname AS column_name,
+        confrelid::regclass::text AS foreign_table
+      FROM pg_constraint c
+      JOIN unnest(c.conkey) WITH ORDINALITY AS cols(attnum, ord) ON true
+      JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = cols.attnum
+      WHERE c.contype = 'f'
+        AND c.conrelid = '"Consultations"'::regclass
+    `);
+
+    consultationForeignTables = rows.reduce((acc, row) => {
+      acc[row.column_name] = row.foreign_table.replace(/"/g, "");
+      return acc;
+    }, {});
+  }
+
+  return consultationForeignTables;
+}
+
+// CREATE
 exports.createConsultation = async (req, res) => {
   try {
-    const { providerId, channelName } = req.body;
-    const userId = req.user.id;
+    const { providerId, type, channelName } = req.body;
 
     const provider = await Provider.findByPk(providerId);
 
@@ -12,64 +46,69 @@ exports.createConsultation = async (req, res) => {
       return res.status(404).json({ message: "Provider not found" });
     }
 
-    const consultation = await Consultation.create({
-      userId,
-      providerId,
-      channelName,
-      status: "PENDING"
+    const columns = await getConsultationColumns();
+    const foreignTables = await getConsultationForeignTables();
+
+    const payload = { status: "PENDING" };
+
+    if (!foreignTables.userId || foreignTables.userId === "users") {
+      payload.userId = req.user.id;
+    }
+
+    if (!foreignTables.providerId || foreignTables.providerId === "providers") {
+      payload.providerId = providerId;
+    }
+
+    if (columns.has("type")) {
+      payload.type = type || "video";
+    }
+
+    if (columns.has("channelName")) {
+      payload.channelName =
+        channelName || `consultation_${req.user.id}_${providerId}_${Date.now()}`;
+    }
+
+    const consultation = await Consultation.create(payload, {
+      fields: Object.keys(payload),
+      returning: Object.keys(payload),
     });
 
     return res.status(201).json({
       message: "Consultation created",
-      consultation
+      consultation,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Failed to create consultation",
+      error: err.message,
+    });
+  }
+};
+
+// GET ALL
+exports.getConsultations = async (req, res) => {
+  try {
+    const data = await Consultation.findAll({
+      where: { userId: req.user.id },
     });
 
-  } catch (error) {
-    console.error("CONSULTATION ERROR:", error);
-    return res.status(500).json({ message: "Failed to create consultation" });
+    return res.status(200).json(data);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 };
 
-exports.getConsultations = async (req, res) => {
-  return res.json([]);
-};
-
+// GET ONE
 exports.getConsultationById = async (req, res) => {
-  return res.json({ id: req.params.id });
-};
-
-exports.acceptConsultation = async (req, res) => {
   try {
-    const consultation = await Consultation.findByPk(req.params.id);
+    const data = await Consultation.findByPk(req.params.id);
 
-    if (!consultation) {
+    if (!data) {
       return res.status(404).json({ message: "Not found" });
     }
 
-    consultation.status = "IN_CALL";
-    await consultation.save();
-
-    res.json({ message: "Accepted", consultation });
-
+    return res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ message: "Error" });
-  }
-};
-
-exports.endConsultation = async (req, res) => {
-  try {
-    const consultation = await Consultation.findByPk(req.params.id);
-
-    if (!consultation) {
-      return res.status(404).json({ message: "Not found" });
-    }
-
-    consultation.status = "ENDED";
-    await consultation.save();
-
-    res.json({ message: "Ended", consultation });
-
-  } catch (err) {
-    res.status(500).json({ message: "Error" });
+    return res.status(500).json({ error: err.message });
   }
 };

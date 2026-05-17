@@ -1,7 +1,56 @@
-class AgoraService {
-  static const String appId = "YOUR_AGORA_APP_ID";
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 
-  static String generateChannelName(String consultationId) {
-    return "consult_$consultationId";
+class AgoraService {
+  AgoraService._();
+
+  static final AgoraService instance = AgoraService._();
+
+  RtcEngine? _engine;
+  bool _initialized = false;
+
+  Future<void> init() async {
+    if (_initialized) return;
+
+    _engine = createAgoraRtcEngine();
+
+    await _engine!.initialize(
+      const RtcEngineContext(
+        appId: "114a1c0095cc4175ada6e0b2082d7c3d",
+      ),
+    );
+
+    await _engine!.enableVideo();
+
+    _initialized = true;
+  }
+
+  RtcEngine get engine {
+    if (_engine == null) {
+      throw Exception("Agora not initialized");
+    }
+    return _engine!;
+  }
+
+  Future<void> joinChannel({
+    required String token,
+    required String channelName,
+    required int uid,
+  }) async {
+    await engine.joinChannel(
+      token: token,
+      channelId: channelName,
+      uid: uid,
+      options: const ChannelMediaOptions(),
+    );
+  }
+
+  Future<void> leaveChannel() async {
+    await engine.leaveChannel();
+  }
+
+  Future<void> dispose() async {
+    await _engine?.release();
+    _engine = null;
+    _initialized = false;
   }
 }

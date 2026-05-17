@@ -1,4 +1,6 @@
-POST   /providers/register             // New practitioner form
-GET    /providers/status/:id           // View onboarding status
-POST   /providers/verify               // Admin marks as approved
-GET    /providers/list                 // List available doctors (searchable)
+const router = require("express").Router();
+
+// Legacy route notes were moved out of executable code. Use providerRoutes.js
+// for mounted provider APIs.
+
+module.exports = router;

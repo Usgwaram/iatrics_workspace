@@ -1,6 +1,7 @@
 const { Provider } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { jwtSecret } = require('../config/secrets');
 
 // POST /register
 exports.register = async (req, res) => {
@@ -34,7 +35,7 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, provider.password);
     if (!isMatch) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: provider.id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1d' });
+    const token = jwt.sign({ id: provider.id }, jwtSecret(), { expiresIn: '1d' });
 
     res.json({ message: 'Login successful', token });
   } catch (err) {

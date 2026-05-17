@@ -1,13 +1,17 @@
 import 'package:flutter/foundation.dart';
 
 class NetworkConfig {
+  static const _definedBaseUrl = String.fromEnvironment('API_BASE_URL');
+
   static String get baseUrl {
-    if (kIsWeb) {
-      // ✅ For Chrome (running on same Mac)
+    if (_definedBaseUrl.isNotEmpty) {
+      return _definedBaseUrl;
+    }
+
+    if (kDebugMode && kIsWeb) {
       return "http://localhost:5002";
     }
 
-    // ✅ For real devices (iPhone, Android)
-    return "http://192.168.0.200:5002";
+    return "https://api.iatrics.ng";
   }
 }

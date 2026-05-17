@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../../core/services/call_service.dart';
+import '../../utils/network_config.dart';
 
 class VideoCallScreen extends StatefulWidget {
   final String channelName;
@@ -25,6 +28,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   bool muted = false;
   bool speakerOn = true;
   bool videoEnabled = true;
+  static const agoraAppId = String.fromEnvironment('AGORA_APP_ID');
 
   Timer? callTimer;
   int seconds = 0;
@@ -43,9 +47,13 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   Future<void> initAgora() async {
     engine = createAgoraRtcEngine();
 
+    if (agoraAppId.isEmpty) {
+      throw StateError('AGORA_APP_ID must be provided with --dart-define');
+    }
+
     await engine.initialize(
       const RtcEngineContext(
-        appId: "YOUR_AGORA_APP_ID",
+        appId: agoraAppId,
       ),
     );
 
@@ -62,7 +70,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       ),
     );
 
-    final token = null;
+    final token = await fetchAgoraToken();
 
     await engine.joinChannel(
       token: token,
@@ -70,6 +78,21 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       uid: widget.uid,
       options: const ChannelMediaOptions(),
     );
+  }
+
+  Future<String> fetchAgoraToken() async {
+    final response = await http.get(
+      Uri.parse(
+        "${NetworkConfig.baseUrl}/api/agora/token?channel=${widget.channelName}&uid=${widget.uid}",
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw StateError('Unable to fetch Agora token');
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['token'] as String;
   }
 
   // ============================
@@ -149,7 +172,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                 style: TextStyle(color: Colors.white),
               ),
             ),
-
           Positioned(
             top: 40,
             right: 20,
@@ -164,7 +186,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
               ),
             ),
           ),
-
           Positioned(
             top: 40,
             left: 20,
@@ -173,7 +194,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
               style: const TextStyle(color: Colors.white),
             ),
           ),
-
           Positioned(
             bottom: 40,
             left: 0,

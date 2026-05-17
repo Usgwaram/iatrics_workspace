@@ -1,122 +1,165 @@
-const { User, WalletTransaction, Withdrawal, sequelize } = require("../models");
-//const payoutQueue = require("../queues/payoutQueue");
+const {
+  WalletTransaction,
+  Withdrawal,
+  sequelize,
+} = require("../models");
+
+const { calculateBalance } = require("./walletController");
 
 // ============================
 // REQUEST WITHDRAWAL
 // ============================
+
 exports.requestWithdrawal = async (req, res) => {
-  const t = await sequelize.transaction();
+  const tx =
+    global.testTransaction ||
+    (await sequelize.transaction());
+
+  const usingGlobalTx =
+    !!global.testTransaction;
 
   try {
-    const { email, amount, accountNumber, bankCode } = req.body;
+    const {
+      amount,
+      bankCode,
+      accountNumber,
+      accountName,
+    } = req.body;
+
+    const userId =
+      req.user?.id || req.body.userId;
 
     // ============================
     // VALIDATION
     // ============================
-    if (!email || !amount || !accountNumber || !bankCode) {
-      await t.rollback();
-      return res.status(400).json({ error: "All fields are required" });
-    }
 
-    if (amount <= 0) {
-      await t.rollback();
-      return res.status(400).json({ error: "Invalid amount" });
-    }
+    const transferAmount = Number(amount);
 
-    // ============================
-    // FIND USER
-    // ============================
-    const user = await User.findOne({
-      where: { email },
-      transaction: t,
-      lock: t.LOCK.UPDATE, // 🔒 prevents race conditions
-    });
-
-    if (!user) {
-      await t.rollback();
-      return res.status(404).json({ error: "User not found" });
+    if (
+      !Number.isFinite(transferAmount) ||
+      transferAmount <= 0 ||
+      !bankCode ||
+      !accountNumber
+    ) {
+      throw new Error(
+        "All fields are required"
+      );
     }
 
     // ============================
-    // CALCULATE BALANCE
+    // BALANCE CHECK
     // ============================
-    const credits =
-      (await WalletTransaction.sum("amount", {
-        where: { userId: user.id, type: "credit", status: "success" },
-        transaction: t,
-      })) || 0;
 
-    const debits =
-      (await WalletTransaction.sum("amount", {
-        where: { userId: user.id, type: "debit", status: "success" },
-        transaction: t,
-      })) || 0;
+    const balance =
+      await calculateBalance(userId, tx);
 
-    const balance = credits - debits;
-
-    if (balance < amount) {
-      await t.rollback();
-      return res.status(400).json({ error: "Insufficient balance" });
+    if (balance < transferAmount) {
+      throw new Error(
+        "Insufficient funds"
+      );
     }
 
     // ============================
-    // CREATE RECORDS
+    // CREATE WITHDRAWAL
     // ============================
-    const reference = `WD_${Date.now()}_${user.id}`;
 
-    const withdrawal = await Withdrawal.create(
-      {
-        userId: user.id,
-        amount,
-        accountNumber,
-        bankCode,
-        status: "pending",
-        reference,
-      },
-      { transaction: t }
-    );
+    const withdrawal =
+      await Withdrawal.create(
+        {
+          userId,
+          amount: transferAmount,
+          bankCode,
+          accountNumber,
+          status: "pending",
+        },
+        {
+          transaction: tx,
+        }
+      );
+
+    // ============================
+    // WALLET DEBIT
+    // ============================
+
+    const reference = `WD_${Date.now()}_${userId}`;
 
     await WalletTransaction.create(
       {
-        userId: user.id,
+        userId,
+        amount: transferAmount,
         type: "debit",
-        amount,
-        status: "pending",
+        status: "confirmed",
         reference,
-        source: "withdrawal",
+        source: "bank_transfer",
       },
-      { transaction: t }
+      {
+        transaction: tx,
+      }
     );
-
-    // ============================
-    // QUEUE OR FALLBACK
-    // ============================
-    if (payoutQueue) {
-      console.log("⚠️ payoutQueue disabled in production");
-    } else {
-      console.log("⚠️ Queue disabled — marking as processing");
-
-      withdrawal.status = "processing";
-      await withdrawal.save({ transaction: t });
-    }
 
     // ============================
     // COMMIT
     // ============================
-    await t.commit();
+
+    if (!usingGlobalTx) {
+      await tx.commit();
+    }
 
     return res.json({
-      message: "Withdrawal requested",
+      success: true,
       withdrawal,
-      balanceAfter: balance - amount,
+      reference,
+      balance: balance - transferAmount,
     });
 
   } catch (err) {
-    await t.rollback();
-    console.error("❌ Withdrawal error:", err);
+
+    if (!usingGlobalTx) {
+      await tx.rollback();
+    }
+
+    console.error(
+      "❌ Withdrawal error:",
+      err
+    );
 
     return res.status(500).json({
-      error: "Withdrawal failed",
+      error: err.message,
+    });
+  }
+};
+
+// ============================
+// GET LOGGED-IN USER WITHDRAWALS
+// ============================
+
+exports.getMyWithdrawals =
+  async (req, res) => {
+
+  try {
+    const withdrawals =
+      await Withdrawal.findAll({
+        where: {
+          userId: req.user.id,
+        },
+        order: [
+          ["createdAt", "DESC"],
+        ],
+        transaction: global.testTransaction || undefined,
+      });
+
+    return res.json({ withdrawals });
+
+  } catch (err) {
+
+    console.error(
+      "❌ Fetch withdrawals error:",
+      err
+    );
+
+    return res.status(500).json({
+      error:
+        "Failed to fetch withdrawals",
     });
   }
 };
@@ -124,26 +167,37 @@ exports.requestWithdrawal = async (req, res) => {
 // ============================
 // GET PROVIDER WITHDRAWALS
 // ============================
-exports.getProviderWithdrawals = async (req, res) => {
+
+exports.getProviderWithdrawals =
+  async (req, res) => {
+
   try {
-    const { providerId } = req.params;
 
-    if (!providerId) {
-      return res.status(400).json({ error: "Provider ID required" });
-    }
+    const { providerId } =
+      req.params;
 
-    const withdrawals = await Withdrawal.findAll({
-      where: { userId: providerId },
-      order: [["createdAt", "DESC"]],
-    });
+    const withdrawals =
+      await Withdrawal.findAll({
+        where: {
+          userId: providerId,
+        },
+        order: [
+          ["createdAt", "DESC"],
+        ],
+      });
 
     return res.json(withdrawals);
 
   } catch (err) {
-    console.error("❌ Fetch withdrawals error:", err);
+
+    console.error(
+      "❌ Fetch withdrawals error:",
+      err
+    );
 
     return res.status(500).json({
-      error: "Failed to fetch withdrawals",
+      error:
+        "Failed to fetch withdrawals",
     });
   }
 };

@@ -1,38 +1,31 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthToken {
-  static const _secureStorage = FlutterSecureStorage();
-  static const _key = 'auth_token';
+  static const _tokenKey = "token";
+  static const _userIdKey = "userId";
 
-  // 🔐 SAVE TOKEN
   static Future<void> saveToken(String token) async {
-    if (kIsWeb) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_key, token);
-    } else {
-      await _secureStorage.write(key: _key, value: token);
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
   }
 
-  // 🔑 GET TOKEN
   static Future<String?> getToken() async {
-    if (kIsWeb) {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString(_key);
-    } else {
-      return await _secureStorage.read(key: _key);
-    }
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
   }
 
-  // 🚪 CLEAR TOKEN
-  static Future<void> clearToken() async {
-    if (kIsWeb) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_key);
-    } else {
-      await _secureStorage.delete(key: _key);
-    }
+  static Future<void> saveUserId(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userIdKey, userId);
+  }
+
+  static Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userIdKey);
+  }
+
+  static Future<void> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
   }
 }

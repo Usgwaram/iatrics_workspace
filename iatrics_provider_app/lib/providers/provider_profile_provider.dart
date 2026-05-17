@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/provider_model.dart';
+
+import '../../models/provider_model.dart';
 
 class ProviderProfileProvider extends ChangeNotifier {
   ProviderModel? provider;
@@ -9,16 +10,22 @@ class ProviderProfileProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateOnboardingStep(String step) {
+  void updateProfile({
+    String? fullName,
+    String? email,
+  }) {
     if (provider == null) return;
 
-    provider = ProviderModel(
-      id: provider!.id,
-      name: provider!.name,
-      email: provider!.email,
-      onboardingStep: step,
+    provider = provider!.copyWith(
+      fullName: fullName,
+      email: email,
     );
 
+    notifyListeners();
+  }
+
+  void clearProvider() {
+    provider = null;
     notifyListeners();
   }
 }

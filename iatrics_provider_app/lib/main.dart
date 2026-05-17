@@ -1,38 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'core/services/socket_service.dart';
-import 'core/services/call_service.dart';
 import 'features/auth/auth_controller.dart';
+import 'features/auth/login_screen.dart';
+import 'features/dashboard/provider_dashboard_screen.dart';
+import 'features/onboarding/onboarding_controller.dart';
+import 'features/onboarding/onboarding_flow.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+import 'app_root.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool enableExternalServices;
+  final OnboardingController? onboardingController;
+
+  const MyApp({
+    super.key,
+    this.enableExternalServices = true,
+    this.onboardingController,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AuthController()..init(),
+      create: (_) => AuthController(),
       child: Consumer<AuthController>(
         builder: (context, auth, _) {
-          if (auth.isLoggedIn && auth.providerId != null) {
-            final socket = SocketService();
-            socket.connect(auth.providerId!, "PROVIDER");
-
-            CallService().init(
-              socketInstance: socket,
-              navigatorKey: navigatorKey,
-            );
-          }
+          final provider = auth.provider;
+          final token = auth.token ?? '';
+          final needsOnboarding = provider != null &&
+              !provider.isApproved &&
+              provider.onboardingStep != 'APPROVED';
 
           return MaterialApp(
-            navigatorKey: navigatorKey,
-            home: auth.resolveHome(),
+            debugShowCheckedModeBanner: false,
+            title: 'Iatrics Provider',
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+            ),
+            home: auth.isLoggedIn
+                ? AppRoot(
+                    userId: provider!.id.toString(),
+                    enableExternalServices: enableExternalServices,
+                    child: needsOnboarding
+                        ? OnboardingFlow(
+                            providerId: provider.id,
+                            token: token,
+                            controller: onboardingController,
+                          )
+                        : ProviderDashboardScreen(
+                            providerId: provider.id,
+                          ),
+                  )
+                : const LoginScreen(),
           );
         },
       ),

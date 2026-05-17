@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class UserRegisterScreen extends StatefulWidget {
-  const UserRegisterScreen({super.key});
+  final http.Client? client;
+
+  const UserRegisterScreen({
+    super.key,
+    this.client,
+  });
 
   @override
   State<UserRegisterScreen> createState() => _UserRegisterScreenState();
@@ -20,7 +25,7 @@ class _UserRegisterScreenState extends State<UserRegisterScreen> {
   Future<void> registerUser() async {
     setState(() => loading = true);
 
-    final res = await http.post(
+    final res = await (widget.client ?? http.Client()).post(
       Uri.parse("http://YOUR_IP:5002/api/users/register"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
@@ -30,6 +35,8 @@ class _UserRegisterScreenState extends State<UserRegisterScreen> {
         "password": passCtrl.text,
       }),
     );
+
+    if (!mounted) return;
 
     setState(() => loading = false);
 
@@ -50,12 +57,20 @@ class _UserRegisterScreenState extends State<UserRegisterScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Name")),
-            TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: "Email")),
-            TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: "Phone")),
-            TextField(controller: passCtrl, obscureText: true, decoration: const InputDecoration(labelText: "Password")),
+            TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: "Name")),
+            TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(labelText: "Email")),
+            TextField(
+                controller: phoneCtrl,
+                decoration: const InputDecoration(labelText: "Phone")),
+            TextField(
+                controller: passCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "Password")),
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: loading ? null : registerUser,
               child: Text(loading ? "Registering..." : "Register"),

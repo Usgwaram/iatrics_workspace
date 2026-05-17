@@ -2,23 +2,24 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'consultation_detail_screen.dart';
+import '../../utils/network_config.dart';
 
 class UserConsultationHistory extends StatefulWidget {
   final String userId;
+  final http.Client? client;
 
   const UserConsultationHistory({
-    Key? key,
+    super.key,
     required this.userId,
-  }) : super(key: key);
+    this.client,
+  });
 
   @override
   State<UserConsultationHistory> createState() =>
       _UserConsultationHistoryState();
 }
 
-class _UserConsultationHistoryState
-    extends State<UserConsultationHistory> {
-
+class _UserConsultationHistoryState extends State<UserConsultationHistory> {
   List consultations = [];
   bool isLoading = true;
 
@@ -33,9 +34,9 @@ class _UserConsultationHistoryState
   // ============================
   Future<void> fetchConsultations() async {
     try {
-      final res = await http.get(
+      final res = await (widget.client ?? http.Client()).get(
         Uri.parse(
-          "http://192.168.1.100:5002/api/consultations/user/${widget.userId}",
+          "${NetworkConfig.baseUrl}/api/consultations/user/${widget.userId}",
         ),
       );
 
@@ -48,6 +49,8 @@ class _UserConsultationHistoryState
         throw Exception("Failed to load data");
       }
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
         isLoading = false;
       });
@@ -65,48 +68,43 @@ class _UserConsultationHistoryState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("My Consultations")),
-
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-
           : consultations.isEmpty
-          ? const Center(
-        child: Text("No consultations yet"),
-      )
+              ? const Center(
+                  child: Text("No consultations yet"),
+                )
+              : ListView.builder(
+                  itemCount: consultations.length,
+                  itemBuilder: (_, i) {
+                    final c = consultations[i];
 
-          : ListView.builder(
-        itemCount: consultations.length,
-        itemBuilder: (_, i) {
-          final c = consultations[i];
-
-          return Card(
-            margin: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 6),
-            child: ListTile(
-              title: Text(
-                c['diagnosis'] ?? 'No diagnosis',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      child: ListTile(
+                        title: Text(
+                          c['diagnosis'] ?? 'No diagnosis',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: Text(
+                          "₦${c['cost']} • ${c['createdAt'] ?? ''}",
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ConsultationDetailScreen(data: c),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
-              ),
-              subtitle: Text(
-                "₦${c['cost']} • ${c['createdAt'] ?? ''}",
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        ConsultationDetailScreen(data: c),
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
     );
   }
 }

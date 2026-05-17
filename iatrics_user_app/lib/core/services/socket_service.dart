@@ -1,38 +1,66 @@
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 class SocketService {
-  late IO.Socket socket;
+  SocketService._internal();
+  static final SocketService instance = SocketService._internal();
 
-  void connect(String userId, String role) {
-    socket = IO.io(
-      "http://YOUR_BACKEND_URL",
-      IO.OptionBuilder()
+  io.Socket? socket;
+
+  bool _connected = false;
+  bool _initialized = false;
+
+  bool get isConnected => _connected;
+
+  void connect({
+    required String baseUrl,
+    required String token,
+  }) {
+    if (_initialized) return;
+
+    socket = io.io(
+      baseUrl,
+      io.OptionBuilder()
           .setTransports(['websocket'])
-          .disableAutoConnect()
+          .enableAutoConnect()
+          .setAuth({'token': token}) // 🔥 AUTH SAFE SOCKET
           .build(),
     );
 
-    socket.connect();
-
-    socket.onConnect((_) {
-      print("Connected");
-
-      socket.emit("register", {
-        "userId": userId,
-        "role": role,
-      });
+    socket!.onConnect((_) {
+      _connected = true;
+      _initialized = true;
+      print("🟢 Socket connected");
     });
+
+    socket!.onDisconnect((_) {
+      _connected = false;
+      _initialized = false;
+      print("🔴 Socket disconnected");
+    });
+
+    socket!.onConnectError((err) {
+      print("❌ Socket connect error: $err");
+    });
+
+    socket!.connect();
   }
 
   void emit(String event, dynamic data) {
-    socket.emit(event, data);
+    socket?.emit(event, data);
   }
 
-  void on(String event, Function(dynamic) callback) {
-    socket.on(event, callback);
+  void on(String event, Function(dynamic) handler) {
+    socket?.on(event, handler);
+  }
+
+  void off(String event) {
+    socket?.off(event);
   }
 
   void disconnect() {
-    socket.disconnect();
+    socket?.disconnect();
+    socket = null;
+    _connected = false;
+    _initialized = false;
   }
 }

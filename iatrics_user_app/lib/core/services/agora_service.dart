@@ -1,47 +1,28 @@
-import 'package:iatrics_user_app/core/services/agora_service.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 
 class AgoraService {
-  static final AgoraService _instance = AgoraService._internal();
-  factory AgoraService() => _instance;
-
   AgoraService._internal();
 
-  RtcEngine? _engine;
+  static final AgoraService instance = AgoraService._internal();
 
-  // ⚠️ Replace with your real Agora App ID later
-  final String appId = "YOUR_AGORA_APP_ID";
+  late RtcEngine engine;
 
-  bool _initialized = false;
+  Future<void> initialize() async {
+    engine = createAgoraRtcEngine();
 
-  // =========================
-  // INIT ENGINE
-  // =========================
-  Future<void> init() async {
-    if (_initialized) return;
-
-    _engine = createAgoraRtcEngine();
-
-    await _engine!.initialize(
-      RtcEngineContext(appId: appId),
+    await engine.initialize(
+      const RtcEngineContext(
+        appId: "114a1c0095cc4175ada6e0b2082d7c91a74",
+      ),
     );
-
-    await _engine!.enableVideo();
-    await _engine!.enableAudio();
-
-    _initialized = true;
   }
 
-  // =========================
-  // JOIN CHANNEL
-  // =========================
   Future<void> joinChannel({
-    required String channelName,
     required String token,
+    required String channelName,
     required int uid,
   }) async {
-    if (_engine == null) await init();
-
-    await _engine!.joinChannel(
+    await engine.joinChannel(
       token: token,
       channelId: channelName,
       uid: uid,
@@ -49,19 +30,7 @@ class AgoraService {
     );
   }
 
-  // =========================
-  // LEAVE CHANNEL
-  // =========================
   Future<void> leaveChannel() async {
-    await _engine?.leaveChannel();
-  }
-
-  // =========================
-  // DISPOSE
-  // =========================
-  Future<void> dispose() async {
-    await _engine?.release();
-    _engine = null;
-    _initialized = false;
+    await engine.leaveChannel();
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../core/services/call_service.dart';
+import 'package:audioplayers/audioplayers.dart';
+
+import '../../core/call/call_service.dart';
 import 'video_call_screen.dart';
 
-class IncomingCallScreen extends StatelessWidget {
+class IncomingCallScreen extends StatefulWidget {
   final String channelName;
-  final String callerId;
+  final int callerId;
 
   const IncomingCallScreen({
     super.key,
@@ -13,50 +15,100 @@ class IncomingCallScreen extends StatelessWidget {
   });
 
   @override
+  State<IncomingCallScreen> createState() => _IncomingCallScreenState();
+}
+
+class _IncomingCallScreenState extends State<IncomingCallScreen> {
+  late final AudioPlayer _ringtonePlayer;
+
+  @override
+  void initState() {
+    super.initState();
+    _ringtonePlayer = AudioPlayer();
+    _playRingtone();
+  }
+
+  Future<void> _playRingtone() async {
+    try {
+      await _ringtonePlayer.setReleaseMode(ReleaseMode.loop);
+      await _ringtonePlayer.play(AssetSource('audio/ringtone.mp3'));
+    } catch (_) {}
+  }
+
+  Future<void> _stopRingtone() async {
+    try {
+      await _ringtonePlayer.stop();
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _ringtonePlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _acceptCall() async {
+    await _stopRingtone();
+    if (!mounted) return;
+
+    CallService.instance.acceptCall(widget.channelName);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VideoCallScreen(
+          channelName: widget.channelName,
+          uid: widget.callerId,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _declineCall() async {
+    await _stopRingtone();
+    if (!mounted) return;
+
+    CallService.instance.declineCall(widget.channelName);
+    Navigator.pop(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Incoming Call")),
+      appBar: AppBar(
+        title: const Text("Incoming Call"),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Incoming Video Call"),
-
+            const Text(
+              "Incoming Video Call",
+              style: TextStyle(fontSize: 20),
+            ),
             const SizedBox(height: 30),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.call, color: Colors.green),
+                  icon: const Icon(
+                    Icons.call,
+                    color: Colors.green,
+                  ),
                   iconSize: 50,
-                  onPressed: () {
-                    CallService().acceptCall(channelName);
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => VideoCallScreen(
-                          channelName: channelName,
-                          uid: callerId,
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: _acceptCall,
                 ),
-
                 const SizedBox(width: 40),
-
                 IconButton(
-                  icon: const Icon(Icons.call_end, color: Colors.red),
+                  icon: const Icon(
+                    Icons.call_end,
+                    color: Colors.red,
+                  ),
                   iconSize: 50,
-                  onPressed: () {
-                    CallService().declineCall(channelName);
-                    Navigator.pop(context);
-                  },
+                  onPressed: _declineCall,
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),

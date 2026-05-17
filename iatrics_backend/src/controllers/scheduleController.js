@@ -1,57 +1,97 @@
-const { Schedule } = require('../models');
+const { Schedule } = require("../models");
+const { getTransaction } = require("../utils/dbTransaction");
 
-module.exports = {
-  async create(req, res) {
-    try {
-      const schedule = await Schedule.create(req.body);
-      res.status(201).json(schedule);
-    } catch (err) {
-      res.status(500).json({ error: 'Failed to create schedule' });
+// CREATE
+exports.create = async (req, res) => {
+  try {
+    const schedule = await Schedule.create(
+      {
+        providerId: req.body.providerId || req.user?.id,
+        day: req.body.day,
+        startTime: req.body.startTime,
+        endTime: req.body.endTime,
+      },
+      { transaction: getTransaction() }
+    );
+
+    res.status(201).json(schedule);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getByProvider = async (req, res) => {
+  try {
+    const providerId = req.query.providerId || req.params.providerId;
+
+    if (!providerId) {
+      return res.status(400).json({ error: "providerId is required" });
     }
-  },
 
-  async getAll(req, res) {
-    try {
-      const schedules = await Schedule.findAll();
-      res.json(schedules);
-    } catch (err) {
-      res.status(500).json({ error: 'Error fetching schedules' });
+    const schedules = await Schedule.findAll({
+      where: { providerId },
+      transaction: getTransaction(),
+    });
+
+    res.json(schedules);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET ALL
+exports.getAll = async (req, res) => {
+  try {
+    const schedules = await Schedule.findAll();
+    res.json(schedules);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET ONE
+exports.getById = async (req, res) => {
+  try {
+    const schedule = await Schedule.findByPk(req.params.id);
+
+    if (!schedule) {
+      return res.status(404).json({ error: "Not found" });
     }
-  },
 
-  async getById(req, res) {
-    try {
-      const schedule = await Schedule.findByPk(req.params.id);
-      if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
-      res.json(schedule);
-    } catch (err) {
-      res.status(500).json({ error: 'Error retrieving schedule' });
+    res.json(schedule);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// UPDATE
+exports.update = async (req, res) => {
+  try {
+    const schedule = await Schedule.findByPk(req.params.id);
+
+    if (!schedule) {
+      return res.status(404).json({ error: "Not found" });
     }
-  },
 
-  async update(req, res) {
-    try {
-      const { date, time, availability } = req.body;
+    await schedule.update(req.body);
+    res.json(schedule);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
-      await Schedule.update(
-        { date, time, availability },
-        { where: { id } }
-      );
+// DELETE
+exports.delete = async (req, res) => {
+  try {
+    const schedule = await Schedule.findByPk(req.params.id);
 
-      if (!updated) return res.status(404).json({ error: 'Schedule not found' });
-      res.json({ message: 'Schedule updated' });
-    } catch (err) {
-      res.status(500).json({ error: 'Error updating schedule' });
+    if (!schedule) {
+      return res.status(404).json({ error: "Not found" });
     }
-  },
 
-  async delete(req, res) {
-    try {
-      const deleted = await Schedule.destroy({ where: { id: req.params.id } });
-      if (!deleted) return res.status(404).json({ error: 'Schedule not found' });
-      res.json({ message: 'Schedule deleted' });
-    } catch (err) {
-      res.status(500).json({ error: 'Error deleting schedule' });
-    }
+    await schedule.destroy();
+    res.json({ message: "Deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

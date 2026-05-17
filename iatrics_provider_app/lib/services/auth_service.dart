@@ -1,25 +1,35 @@
-import '../network/api_client.dart';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+import '../utils/network_config.dart';
 
 class AuthService {
-  final ApiClient api = ApiClient();
-
-  Future login(String email, String password) async {
-    return await api.post("/api/auth/login", {
-      "email": email,
-      "password": password,
-    });
-  }
-}
-
-    return res;
-  }
-
-  Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
-    final res = await api.post(
-      "/api/providers/register",
-      body: data,
+  Future<Map<String, dynamic>> login({
+    required String email,
+    required String password,
+  }) async {
+    final response = await http.post(
+      Uri.parse("$baseUrl/api/auth/login"),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "email": email,
+        "password": password,
+      }),
     );
 
-    return res;
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(data.toString());
+    }
+
+    return {
+      "token": data["data"]["token"],
+      "provider": data["data"]["provider"],
+    };
   }
+
+  String get baseUrl => NetworkConfig.baseUrl;
 }

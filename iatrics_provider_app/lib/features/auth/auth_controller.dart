@@ -1,55 +1,47 @@
 import 'package:flutter/material.dart';
-import '../../core/services/auth_service.dart';
+
+import '../../models/provider_model.dart';
 
 class AuthController extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  bool isLoading = false;
+  bool isLoggedIn = false;
 
   String? token;
-  Map<String, dynamic>? provider;
 
-  bool get isLoggedIn => token != null;
+  ProviderModel? provider;
 
-  // 🔥 INIT
-  Future<void> init() async {
-    // TODO: load token from secure storage later
+  Future<void> login({
+    required String email,
+    required String password,
+  }) async {
+    isLoading = true;
+    notifyListeners();
+
+    await Future.delayed(
+      const Duration(seconds: 1),
+    );
+
+    token = "test_provider_token";
+
+    provider = ProviderModel(
+      id: 2,
+      fullName: "Test Provider",
+      email: email,
+      onboardingStep: "REGISTERED",
+      isApproved: false,
+    );
+
+    isLoggedIn = true;
+
+    isLoading = false;
     notifyListeners();
   }
 
-  // 🔐 LOGIN
-  Future<bool> login(String email, String password) async {
-    try {
-      final response = await api.post("/api/auth/login", {
-        "email": email,
-        "password": password,
-      });
-      if (response['token'] != null) {
-        token = response['token'];
-        provider = response['provider'];
+  void logout() {
+    token = null;
+    provider = null;
+    isLoggedIn = false;
 
-        notifyListeners();
-        return true;
-      }
-
-      return false;
-    } catch (e) {
-      debugPrint("Login error: $e");
-      return false;
-    }
-  }
-
-  // 👤 GET PROVIDER ID
-  String? get providerId => provider?['id']?.toString();
-
-  // 🧭 HOME ROUTING
-  Widget resolveHome() {
-    if (isLoggedIn) {
-      return const Scaffold(
-        body: Center(child: Text("Provider Dashboard")),
-      );
-    } else {
-      return const Scaffold(
-        body: Center(child: Text("Login Screen")),
-      );
-    }
+    notifyListeners();
   }
 }

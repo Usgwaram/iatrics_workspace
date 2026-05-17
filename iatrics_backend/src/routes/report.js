@@ -1,3 +1,5 @@
-POST   /reports/upload                 // Upload file & notes
-GET    /reports/user/:userId          // View uploaded reports
-POST   /reports/review/:reportId      // Specialist review and comment
+const router = require("express").Router();
+
+// Report endpoints are not mounted yet.
+
+module.exports = router;

@@ -2,18 +2,22 @@ enum AppEnvironment { dev, local, staging, prod }
 
 class AppEnvironmentConfig {
   static late AppEnvironment env;
+  static const _definedBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   static String get baseUrl {
+    if (_definedBaseUrl.isNotEmpty) {
+      return _definedBaseUrl;
+    }
+
     switch (env) {
       case AppEnvironment.dev:
-        return "http://localhost:5002";
+        return "https://api.iatrics.ng";
 
       case AppEnvironment.local:
-        return "http://host.docker.internal:5002";
-    // or tunnel URL (recommended below)
+        return "https://api.iatrics.ng";
 
       case AppEnvironment.staging:
-        return "https://wok-capillary-conform.ngrok-free.dev";
+        return "https://staging.iatrics.ng";
 
       case AppEnvironment.prod:
         return "https://api.iatrics.ng";

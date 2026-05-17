@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../utils/network_config.dart';
 
 class ConsultationHistoryScreen extends StatefulWidget {
   final String providerId;
@@ -12,19 +13,20 @@ class ConsultationHistoryScreen extends StatefulWidget {
       _ConsultationHistoryScreenState();
 }
 
-class _ConsultationHistoryScreenState
-    extends State<ConsultationHistoryScreen> {
-
+class _ConsultationHistoryScreenState extends State<ConsultationHistoryScreen> {
   Future<List<dynamic>> fetchHistory() async {
     final res = await http.get(
-      Uri.parse("http://192.168.1.100:5002/api/consultations/provider/${widget.providerId}"),
+      Uri.parse(
+        "${NetworkConfig.baseUrl}/api/consultations/provider/${widget.providerId}",
+      ),
     );
 
-    final decoded = jsonDecode(res.body);
-    return decoded["data"];
-
     if (res.statusCode == 200) {
-      return jsonDecode(res.body);
+      final decoded = jsonDecode(res.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded["data"] as List<dynamic>? ?? [];
+      }
+      return decoded as List<dynamic>;
     } else {
       throw Exception("Failed to load history");
     }
@@ -37,7 +39,6 @@ class _ConsultationHistoryScreenState
       body: FutureBuilder<List<dynamic>>(
         future: fetchHistory(),
         builder: (context, snapshot) {
-
           // 🔄 LOADING
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -66,15 +67,12 @@ class _ConsultationHistoryScreenState
               final item = history[i];
 
               return Card(
-                margin: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(
                   leading: const Icon(Icons.medical_services),
-
                   title: Text(
                     item["diagnosis"] ?? "No diagnosis",
                   ),
-
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -82,7 +80,6 @@ class _ConsultationHistoryScreenState
                       Text("Date: ${item["createdAt"] ?? "-"}"),
                     ],
                   ),
-
                   trailing: Text(
                     "₦${item["cost"] ?? 0}",
                     style: const TextStyle(

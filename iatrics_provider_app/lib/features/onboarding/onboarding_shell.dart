@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
-import '../../models/provider_model.dart';
+
 import 'onboarding_flow.dart';
 
 class OnboardingShell extends StatelessWidget {
-  final ProviderModel provider;
+  final int providerId;
+  final String token;
 
-  const OnboardingShell({super.key, required this.provider});
+  const OnboardingShell({
+    super.key,
+    required this.providerId,
+    required this.token,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return resolveOnboarding(provider);
+    return OnboardingFlow(
+      providerId: providerId,
+      token: token,
+    );
   }
 }

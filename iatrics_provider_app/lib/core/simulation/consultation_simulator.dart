@@ -16,19 +16,15 @@ class ConsultationSimulator {
     try {
       print("🔐 USER LOGIN");
 
-      final userLogin = await _post("/api/auth/login", {
-        "email": "user@test.com",
-        "password": "123456"
-      });
+      final userLogin = await _post(
+          "/api/auth/login", {"email": "user@test.com", "password": "123456"});
 
       final userToken = userLogin["token"];
 
       print("👨‍⚕️ PROVIDER LOGIN");
 
-      final providerLogin = await _post("/api/auth/login", {
-        "email": "provider@test.com",
-        "password": "123456"
-      });
+      final providerLogin = await _post("/api/auth/login",
+          {"email": "provider@test.com", "password": "123456"});
 
       final providerToken = providerLogin["token"];
 
@@ -36,10 +32,7 @@ class ConsultationSimulator {
 
       final createRes = await _post(
         "/api/consultations",
-        {
-          "providerId": "1",
-          "type": "video"
-        },
+        {"providerId": "1", "type": "video"},
         token: userToken,
       );
 
@@ -73,7 +66,6 @@ class ConsultationSimulator {
       _emit("CALL_ENDED");
 
       print("✅ FLOW COMPLETED");
-
     } catch (e) {
       print("❌ SIMULATION ERROR: $e");
       _emit("ERROR");
@@ -94,10 +86,10 @@ class ConsultationSimulator {
   // 🌐 HTTP HELPERS
   // =========================
   static Future<Map<String, dynamic>> _post(
-      String path,
-      Map<String, dynamic> body, {
-        String? token,
-      }) async {
+    String path,
+    Map<String, dynamic> body, {
+    String? token,
+  }) async {
     final res = await http.post(
       Uri.parse("$baseUrl$path"),
       headers: {
@@ -113,9 +105,9 @@ class ConsultationSimulator {
   }
 
   static Future<Map<String, dynamic>> _get(
-      String path, {
-        String? token,
-      }) async {
+    String path, {
+    String? token,
+  }) async {
     final res = await http.get(
       Uri.parse("$baseUrl$path"),
       headers: {

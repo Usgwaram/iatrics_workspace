@@ -1,9 +1,10 @@
 import 'dart:async';
+
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/services/socket_service.dart';
-import '../../core/services/call_service.dart';
+import '../../core/call/call_service.dart';
+import '../../services/agora_service.dart';
 
 class VideoCallScreen extends StatefulWidget {
   final String channelName;
@@ -23,6 +24,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   late RtcEngine engine;
 
   int? remoteUid;
+
   bool muted = false;
   bool speakerOn = true;
   bool videoEnabled = true;
@@ -36,26 +38,22 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   @override
   void initState() {
     super.initState();
-    initAgora();
+
+    setupCall();
     listenForCallEnd();
     startTimer();
   }
 
-  // ============================
-  // AGORA INIT
-  // ============================
-  Future<void> initAgora() async {
-    engine = createAgoraRtcEngine();
+  Future<void> setupCall() async {
+    await AgoraService.instance.init();
 
-    await engine.initialize(
-      const RtcEngineContext(
-        appId: "YOUR_AGORA_APP_ID",
-      ),
-    );
+    engine = AgoraService.instance.engine;
 
     engine.registerEventHandler(
       RtcEngineEventHandler(
         onUserJoined: (connection, uid, elapsed) {
+          if (!mounted) return;
+
           setState(() {
             remoteUid = uid;
           });
@@ -66,53 +64,63 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       ),
     );
 
-    // 🔐 TODO: Replace with backend token API
-    final token = null;
-
-    await engine.joinChannel(
-      token: token,
-      channelId: widget.channelName,
+    await AgoraService.instance.joinChannel(
+      token: "",
+      channelName: widget.channelName,
       uid: widget.uid,
-      options: const ChannelMediaOptions(),
     );
   }
 
   // ============================
-  // TIMER (for billing later)
+  // TIMER
   // ============================
   void startTimer() {
-    callTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        seconds++;
-      });
-    });
+    callTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) {
+        if (!mounted) return;
+
+        setState(() {
+          seconds++;
+        });
+      },
+    );
   }
 
   String formatTime() {
     final m = (seconds ~/ 60).toString().padLeft(2, '0');
     final s = (seconds % 60).toString().padLeft(2, '0');
+
     return "$m:$s";
   }
 
   // ============================
-  // SOCKET END LISTENER
+  // CALL END LISTENER
   // ============================
   void listenForCallEnd() {
-    CallService().onCallEnded(() {
+    CallService.instance.onCallEnded = (_) {
+      if (!mounted) return;
+
       Navigator.pop(context);
-    });
+    };
   }
 
   // ============================
   // CONTROLS
   // ============================
   void toggleMute() {
-    setState(() => muted = !muted);
+    setState(() {
+      muted = !muted;
+    });
+
     engine.muteLocalAudioStream(muted);
   }
 
   void toggleSpeaker() {
-    setState(() => speakerOn = !speakerOn);
+    setState(() {
+      speakerOn = !speakerOn;
+    });
+
     engine.setEnableSpeakerphone(speakerOn);
   }
 
@@ -121,12 +129,20 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   }
 
   void toggleVideo() {
-    setState(() => videoEnabled = !videoEnabled);
+    setState(() {
+      videoEnabled = !videoEnabled;
+    });
+
     engine.muteLocalVideoStream(!videoEnabled);
   }
 
-  void endCall() {
-    CallService().endCall(widget.channelName);
+  Future<void> endCall() async {
+    CallService.instance.endCall(widget.channelName);
+
+    await AgoraService.instance.leaveChannel();
+
+    if (!mounted) return;
+
     Navigator.pop(context);
   }
 
@@ -139,25 +155,29 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Remote video
+          // REMOTE VIDEO
           if (remoteUid != null)
             AgoraVideoView(
               controller: VideoViewController.remote(
                 rtcEngine: engine,
                 canvas: VideoCanvas(uid: remoteUid),
-                connection:
-                RtcConnection(channelId: widget.channelName),
+                connection: RtcConnection(
+                  channelId: widget.channelName,
+                ),
               ),
             )
           else
             const Center(
               child: Text(
                 "Waiting for user...",
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
               ),
             ),
 
-          // Local preview
+          // LOCAL PREVIEW
           Positioned(
             top: 40,
             right: 20,
@@ -173,17 +193,20 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             ),
           ),
 
-          // Timer
+          // TIMER
           Positioned(
             top: 40,
             left: 20,
             child: Text(
               formatTime(),
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+              ),
             ),
           ),
 
-          // Controls
+          // CONTROLS
           Positioned(
             bottom: 40,
             left: 0,
@@ -191,32 +214,53 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                iconBtn(Icons.mic, toggleMute,
-                    active: !muted),
-                iconBtn(Icons.volume_up, toggleSpeaker,
-                    active: speakerOn),
-                iconBtn(Icons.switch_camera, switchCamera),
-                iconBtn(Icons.videocam, toggleVideo,
-                    active: videoEnabled),
-                iconBtn(Icons.call_end, endCall,
-                    color: Colors.red),
+                iconBtn(
+                  Icons.mic,
+                  toggleMute,
+                  active: !muted,
+                ),
+                iconBtn(
+                  Icons.volume_up,
+                  toggleSpeaker,
+                  active: speakerOn,
+                ),
+                iconBtn(
+                  Icons.switch_camera,
+                  switchCamera,
+                ),
+                iconBtn(
+                  Icons.videocam,
+                  toggleVideo,
+                  active: videoEnabled,
+                ),
+                iconBtn(
+                  Icons.call_end,
+                  endCall,
+                  color: Colors.red,
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget iconBtn(IconData icon, VoidCallback onTap,
-      {bool active = true, Color? color}) {
+  Widget iconBtn(
+    IconData icon,
+    VoidCallback onTap, {
+    bool active = true,
+    Color? color,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: CircleAvatar(
         radius: 25,
-        backgroundColor:
-        color ?? (active ? Colors.white : Colors.grey),
-        child: Icon(icon, color: Colors.black),
+        backgroundColor: color ?? (active ? Colors.white : Colors.grey),
+        child: Icon(
+          icon,
+          color: Colors.black,
+        ),
       ),
     );
   }
@@ -227,8 +271,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   @override
   void dispose() {
     callTimer?.cancel();
-    engine.leaveChannel();
-    engine.release();
+
     super.dispose();
   }
 }

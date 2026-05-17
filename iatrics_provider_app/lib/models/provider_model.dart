@@ -1,27 +1,56 @@
 class ProviderModel {
   final int id;
-  final String name;
+  final String fullName;
   final String email;
-  final String? onboardingStep;
-  final String status;
+  final String specialty;
+  final String licenseNumber;
+  final int? yearsOfExperience;
+  final String onboardingStep;
+  final bool isApproved;
 
   ProviderModel({
     required this.id,
-    required this.name,
+    required this.fullName,
     required this.email,
-    this.onboardingStep,
-    required this.status,
+    this.specialty = '',
+    this.licenseNumber = '',
+    this.yearsOfExperience,
+    this.onboardingStep = 'REGISTERED',
+    this.isApproved = false,
   });
 
   factory ProviderModel.fromJson(Map<String, dynamic> json) {
     return ProviderModel(
       id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      onboardingStep: json['onboardingStep'],
-      status: json['status'] ?? "PENDING",
+      fullName: json['fullName'] ?? '',
+      email: json['email'] ?? '',
+      specialty: json['specialty'] ?? '',
+      licenseNumber: json['licenseNumber'] ?? '',
+      yearsOfExperience: json['yearsOfExperience'],
+      onboardingStep: json['onboardingStep'] ?? 'REGISTERED',
+      isApproved: json['isApproved'] ?? false,
     );
   }
 
-  bool get isApproved => status == "APPROVED";
+  ProviderModel copyWith({
+    int? id,
+    String? fullName,
+    String? email,
+    String? specialty,
+    String? licenseNumber,
+    int? yearsOfExperience,
+    String? onboardingStep,
+    bool? isApproved,
+  }) {
+    return ProviderModel(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      email: email ?? this.email,
+      specialty: specialty ?? this.specialty,
+      licenseNumber: licenseNumber ?? this.licenseNumber,
+      yearsOfExperience: yearsOfExperience ?? this.yearsOfExperience,
+      onboardingStep: onboardingStep ?? this.onboardingStep,
+      isApproved: isApproved ?? this.isApproved,
+    );
+  }
 }

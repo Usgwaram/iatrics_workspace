@@ -2,48 +2,100 @@
 const { Provider } = require("../models");
 
 exports.updateProfile = async (req, res) => {
-  const { providerId } = req.params;
-  const { specialty, licenseNumber, yearsOfExperience } = req.body;
+  try {
+    const { providerId } = req.params;
+    const { specialty, licenseNumber, yearsOfExperience } = req.body;
 
-  const provider = await Provider.findByPk(providerId);
+    const provider = await Provider.findByPk(providerId);
 
-  provider.specialty = specialty;
-  provider.licenseNumber = licenseNumber;
-  provider.yearsOfExperience = yearsOfExperience;
-  provider.onboardingStep = "PROFILE_COMPLETED";
+    if (!provider) {
+      return res.status(404).json({ error: "Provider not found" });
+    }
 
-  await provider.save();
+    provider.specialty = specialty ?? provider.specialty;
+    provider.licenseNumber = licenseNumber ?? provider.licenseNumber;
+    provider.yearsOfExperience =
+      yearsOfExperience ?? provider.yearsOfExperience;
+    provider.onboardingStep = "PROFILE_COMPLETED";
 
-  res.json({ success: true, provider });
+    await provider.save();
+
+    return res.json({ success: true, provider });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to update profile" });
+  }
 };
 
 exports.uploadDocuments = async (req, res) => {
-  const provider = await Provider.findByPk(req.params.providerId);
+  try {
+    const provider = await Provider.findByPk(req.params.providerId);
 
-  provider.onboardingStep = "DOCUMENTS_SUBMITTED";
+    if (!provider) {
+      return res.status(404).json({ error: "Provider not found" });
+    }
 
-  await provider.save();
+    provider.onboardingStep = "DOCUMENTS_SUBMITTED";
 
-  res.json({ success: true });
+    await provider.save();
+
+    return res.json({ success: true, provider });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to upload documents" });
+  }
 };
 
 exports.completeBankSetup = async (req, res) => {
-  const provider = await Provider.findByPk(req.params.providerId);
+  try {
+    const provider = await Provider.findByPk(req.params.providerId);
 
-  provider.onboardingStep = "BANK_SETUP_DONE";
+    if (!provider) {
+      return res.status(404).json({ error: "Provider not found" });
+    }
 
-  await provider.save();
+    provider.onboardingStep = "BANK_SETUP_DONE";
 
-  res.json({ success: true });
+    await provider.save();
+
+    return res.json({ success: true, provider });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to complete bank setup" });
+  }
 };
 
 exports.approveProvider = async (req, res) => {
-  const provider = await Provider.findByPk(req.params.providerId);
+  try {
+    const provider = await Provider.findByPk(req.params.providerId);
 
-  provider.onboardingStep = "APPROVED";
-  provider.isApproved = true;
+    if (!provider) {
+      return res.status(404).json({ error: "Provider not found" });
+    }
 
-  await provider.save();
+    provider.onboardingStep = "APPROVED";
+    provider.isApproved = true;
 
-  res.json({ success: true });
+    await provider.save();
+
+    return res.json({ success: true, provider });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to approve provider" });
+  }
+};
+
+exports.getStatus = async (req, res) => {
+  try {
+    const provider = await Provider.findByPk(req.params.providerId);
+
+    if (!provider) {
+      return res.status(404).json({ error: "Provider not found" });
+    }
+
+    return res.json({
+      success: true,
+      provider,
+      onboardingStep: provider.onboardingStep,
+      isApproved: provider.isApproved,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to fetch onboarding status" });
+  }
 };

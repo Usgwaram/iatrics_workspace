@@ -1,12 +1,13 @@
 const express = require("express");
 const router = express.Router();
 const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
+const { agoraAppId, agoraCertificate } = require("../config/secrets");
 
 router.get("/token", (req, res) => {
   const { channel, uid } = req.query;
 
-  const appId = process.env.AGORA_APP_ID;
-  const appCertificate = process.env.AGORA_APP_CERT;
+  const appId = agoraAppId();
+  const appCertificate = agoraCertificate();
 
   const role = RtcRole.PUBLISHER;
   const expirationTimeInSeconds = 3600;

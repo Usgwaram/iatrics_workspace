@@ -1,9 +1,13 @@
 const axios = require("axios");
+const { paystackSecret } = require("../config/secrets");
 
 const PAYSTACK = "https://api.paystack.co";
-const headers = {
-  Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-};
+
+function headers() {
+  return {
+    Authorization: `Bearer ${paystackSecret()}`,
+  };
+}
 
 exports.createRecipient = async (accountNumber, bankCode) => {
   const res = await axios.post(
@@ -15,7 +19,7 @@ exports.createRecipient = async (accountNumber, bankCode) => {
       bank_code: bankCode,
       currency: "NGN",
     },
-    { headers }
+    { headers: headers() }
   );
 
   return res.data.data;
@@ -30,7 +34,7 @@ exports.initiateTransfer = async ({ amount, recipient, reference }) => {
       recipient,
       reference,
     },
-    { headers }
+    { headers: headers() }
   );
 
   return res.data.data;

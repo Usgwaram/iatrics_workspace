@@ -1,5 +1,13 @@
 require("dotenv").config();
 
+const envFile =
+  process.env.NODE_ENV === "production"
+    ? ".env.production"
+    : process.env.NODE_ENV === "test"
+    ? ".env.test"
+    : ".env";
+
+require("dotenv").config({ path: envFile });
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
@@ -16,7 +24,9 @@ const walletRoutes = require("./src/routes/wallet");
 const paystackRoutes = require("./src/routes/paystack");
 const webhookRoutes = require("./src/routes/webhook");
 const agoraRoutes = require("./src/routes/agora");
-
+const scheduleRoutes = require("./src/routes/scheduleRoutes");
+const adminRoutes = require("./src/routes/adminRoutes");
+const { assertProductionSecrets } = require("./src/config/secrets");
 // security (safe fallback if missing in prod)
 let helmet, rateLimit, xss, hpp, cron;
 
@@ -32,9 +42,17 @@ try {
 
 const app = express();
 const server = http.createServer(app);
+assertProductionSecrets();
+
+const allowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: {
+    origin: allowedOrigins.length ? allowedOrigins : true,
+  },
 });
 
 app.set("io", io);
@@ -42,18 +60,32 @@ app.set("io", io);
 // ======================
 // BASIC MIDDLEWARE
 // ======================
-app.use(cors());
-app.use(express.json());
+app.use(
+  cors({
+    origin: allowedOrigins.length ? allowedOrigins : true,
+  })
+);
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
 if (helmet) app.use(helmet());
 if (xss) app.use(xss());
 if (hpp) app.use(hpp());
 
-if (rateLimit) {
+const rateLimitDisabled =
+  process.env.DISABLE_RATE_LIMIT === "true" ||
+  process.env.RATE_LIMIT_DISABLED === "true";
+
+if (rateLimit && !rateLimitDisabled) {
   app.use(
     rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 100,
+      windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+      max: Number(process.env.RATE_LIMIT_MAX || 100),
     })
   );
 }
@@ -70,7 +102,9 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/paystack", paystackRoutes);
 app.use("/api/webhook", webhookRoutes);
 app.use("/api/agora", agoraRoutes);
-
+app.use("/api/schedules", scheduleRoutes);
+app.use("/api/payments", webhookRoutes);
+app.use("/api/admin", adminRoutes);
 // health check
 app.get("/", (req, res) => {
   res.send("🚀 Iatrics API + Socket Running");
@@ -79,23 +113,38 @@ app.get("/", (req, res) => {
 // ======================
 // DB START
 // ======================
+// ======================
+// DB START
+// ======================
+
+const PORT = process.env.PORT || 5002;
+
 const startServer = async () => {
   try {
     console.log("🧠 Connecting DB...");
+
     await db.sequelize.authenticate();
+
     console.log("🧠 DB connected");
 
-    await db.sequelize.sync();
+    await db.sequelize.sync({ alter: false });
 
-    const PORT = process.env.PORT || 5002;
+    console.log("🧠 DB synced");
 
     server.listen(PORT, () => {
       console.log(`🚀 Server running on ${PORT}`);
     });
-
-  } catch (err) {
-    console.error("❌ Startup error:", err);
+  } catch (error) {
+    console.error("❌ Startup error:", error);
   }
 };
 
-startServer();
+// ======================
+// TEST SAFE EXPORT
+// ======================
+
+if (process.env.NODE_ENV !== "test") {
+  startServer();
+}
+
+module.exports = app;

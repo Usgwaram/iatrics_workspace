@@ -5,8 +5,7 @@ import '../utils/network_config.dart';
 class ProviderEarningsService {
   static String get _baseUrl => NetworkConfig.baseUrl;
 
-  static Future<Map<String, dynamic>> fetchEarnings(
-      String providerId) async {
+  static Future<Map<String, dynamic>> fetchEarnings(String providerId) async {
     final response = await http.get(
       Uri.parse("$_baseUrl/api/provider/earnings/$providerId"),
     );

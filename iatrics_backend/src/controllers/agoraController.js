@@ -1,7 +1,5 @@
 const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
-
-const appId = process.env.AGORA_APP_ID;
-const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+const { agoraAppId, agoraCertificate } = require("../config/secrets");
 
 const generateToken = (req, res) => {
   const { channelName, uid } = req.query;
@@ -16,8 +14,8 @@ const generateToken = (req, res) => {
   const privilegeExpireTime = currentTimestamp + expirationTimeInSeconds;
 
   const token = RtcTokenBuilder.buildTokenWithUid(
-    appId,
-    appCertificate,
+    agoraAppId(),
+    agoraCertificate(),
     channelName,
     parseInt(uid),
     role,

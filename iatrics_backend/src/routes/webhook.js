@@ -2,10 +2,9 @@ const express = require("express");
 const router = express.Router();
 const { handleWebhook } = require("../controllers/paystackWebhookController");
 
-// IMPORTANT: RAW BODY MUST COME FIRST
+// req.rawBody is captured by express.json({ verify }) in server/app setup.
 router.post(
   "/paystack",
-  express.raw({ type: "*/*" }),
   handleWebhook
 );
 module.exports = router;
