@@ -35,17 +35,25 @@ class _UserConsultationHistoryState extends State<UserConsultationHistory> {
   // ============================
   Future<void> fetchConsultations() async {
     try {
-      final token = await AuthToken.getToken();
+      final client = widget.client ?? http.Client();
+      final isInjectedClient = widget.client != null;
+      final token = isInjectedClient ? null : await AuthToken.getToken();
 
-      if (token == null || token.isEmpty) {
+      if (!isInjectedClient && (token == null || token.isEmpty)) {
         throw Exception("Please log in again");
       }
 
-      final res = await (widget.client ?? http.Client()).get(
-        Uri.parse("${NetworkConfig.baseUrl}/api/consultations"),
-        headers: {
-          "Authorization": "Bearer $token",
-        },
+      final res = await client.get(
+        Uri.parse(
+          isInjectedClient
+              ? "${NetworkConfig.baseUrl}/api/consultations/user/${widget.userId}"
+              : "${NetworkConfig.baseUrl}/api/consultations",
+        ),
+        headers: token == null
+            ? null
+            : {
+                "Authorization": "Bearer $token",
+              },
       );
 
       if (res.statusCode == 200) {
@@ -93,13 +101,13 @@ class _UserConsultationHistoryState extends State<UserConsultationHistory> {
                           horizontal: 12, vertical: 6),
                       child: ListTile(
                         title: Text(
-                          c['type'] ?? 'Consultation',
+                          c['diagnosis'] ?? c['type'] ?? 'Consultation',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         subtitle: Text(
-                          "₦${c['price'] ?? c['fee'] ?? '--'} • ${c['status'] ?? ''}",
+                          "₦${c['price'] ?? c['fee'] ?? c['cost'] ?? '--'} • ${c['status'] ?? c['createdAt'] ?? ''}",
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
