@@ -4,8 +4,12 @@ module.exports = (sequelize, DataTypes) => {
     providerId: DataTypes.INTEGER,
     type: DataTypes.STRING,
     channelName: DataTypes.STRING,
+    symptoms: DataTypes.TEXT,
+    appointmentDate: DataTypes.DATEONLY,
+    appointmentTime: DataTypes.STRING,
     duration: DataTypes.INTEGER,
     fee: DataTypes.FLOAT,
+    price: DataTypes.FLOAT,
     status: DataTypes.STRING,
   });
 

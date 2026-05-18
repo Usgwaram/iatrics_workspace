@@ -1,4 +1,5 @@
 const { Provider, Consultation } = require("../models");
+const { calculateConsultationPrice } = require("../services/pricingEngine");
 
 let consultationColumns;
 let consultationForeignTables;
@@ -83,6 +84,99 @@ exports.createConsultation = async (req, res) => {
       error: err.message,
     });
   }
+};
+
+async function createConsultationWithOptionalFields({
+  req,
+  res,
+  type,
+  status,
+  message,
+}) {
+  try {
+    const {
+      providerId,
+      symptoms,
+      appointmentDate,
+      appointmentTime,
+      channelName,
+    } = req.body;
+
+    const provider = await Provider.findByPk(providerId);
+
+    if (!provider) {
+      return res.status(404).json({ message: "Provider not found" });
+    }
+
+    const columns = await getConsultationColumns();
+    const foreignTables = await getConsultationForeignTables();
+    const price = calculateConsultationPrice({
+      specialty: provider.specialty,
+      yearsOfExperience: provider.yearsOfExperience,
+      type,
+    });
+
+    const payload = { status };
+
+    if (!foreignTables.userId || foreignTables.userId === "users") {
+      payload.userId = req.user.id;
+    }
+
+    if (!foreignTables.providerId || foreignTables.providerId === "providers") {
+      payload.providerId = providerId;
+    }
+
+    if (columns.has("type")) payload.type = type;
+    if (columns.has("symptoms")) payload.symptoms = symptoms;
+    if (columns.has("appointmentDate")) {
+      payload.appointmentDate = appointmentDate;
+    }
+    if (columns.has("appointmentTime")) {
+      payload.appointmentTime = appointmentTime;
+    }
+    if (columns.has("fee")) payload.fee = price;
+    if (columns.has("price")) payload.price = price;
+    if (columns.has("channelName")) {
+      payload.channelName =
+        channelName || `consultation_${req.user.id}_${providerId}_${Date.now()}`;
+    }
+
+    const consultation = await Consultation.create(payload, {
+      fields: Object.keys(payload),
+      returning: Object.keys(payload),
+    });
+
+    return res.status(201).json({
+      message,
+      consultation,
+      price,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: `Failed to create ${type} consultation`,
+      error: err.message,
+    });
+  }
+}
+
+exports.createInstantConsultation = async (req, res) => {
+  return createConsultationWithOptionalFields({
+    req,
+    res,
+    type: "instant",
+    status: "pending",
+    message: "Instant consultation created",
+  });
+};
+
+exports.createBookingConsultation = async (req, res) => {
+  return createConsultationWithOptionalFields({
+    req,
+    res,
+    type: "booking",
+    status: "booked",
+    message: "Booking consultation created",
+  });
 };
 
 // GET ALL

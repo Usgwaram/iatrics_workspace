@@ -34,6 +34,7 @@ class OnboardingController extends ChangeNotifier {
     required String specialty,
     required String licenseNumber,
     required int yearsOfExperience,
+    List<String> languages = const ['English'],
   }) async {
     await _run(() async {
       provider = await service.submitProfile(
@@ -42,6 +43,7 @@ class OnboardingController extends ChangeNotifier {
         specialty: specialty,
         licenseNumber: licenseNumber,
         yearsOfExperience: yearsOfExperience,
+        languages: languages,
       );
     });
   }

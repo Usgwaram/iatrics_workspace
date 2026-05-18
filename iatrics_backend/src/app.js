@@ -13,6 +13,10 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/consultations", require("./routes/consultationRoutes"));
 app.use("/api/providers", require("./routes/providerRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/doctors", require("./routes/doctorRoutes"));
+app.use("/api/pricing", require("./routes/pricingRoutes"));
+app.use("/api/uploads", require("./routes/uploadRoutes"));
+app.use("/api/feedback", require("./routes/feedbackRoutes"));
 
 const userRoutes = require('./routes/userRoutes');
 const providerRoutes = require('./routes/providerRoutes');

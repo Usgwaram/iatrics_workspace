@@ -33,6 +33,7 @@ class OnboardingService {
     required String specialty,
     required String licenseNumber,
     required int yearsOfExperience,
+    List<String> languages = const ['English'],
   }) async {
     final body = await _post(
       '/api/providers/$providerId/onboarding/profile',
@@ -41,6 +42,7 @@ class OnboardingService {
         'specialty': specialty,
         'licenseNumber': licenseNumber,
         'yearsOfExperience': yearsOfExperience,
+        'languages': languages,
       },
     );
 

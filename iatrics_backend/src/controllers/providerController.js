@@ -9,7 +9,10 @@ exports.createProvider = async (req, res) => {
       userId,
       specialty: req.body.specialty,
       licenseNumber: req.body.licenseNumber,
-      yearsOfExperience: req.body.yearsOfExperience
+      yearsOfExperience: req.body.yearsOfExperience,
+      languages: Array.isArray(req.body.languages)
+        ? req.body.languages
+        : ["English"],
     });
 
     return res.status(201).json({

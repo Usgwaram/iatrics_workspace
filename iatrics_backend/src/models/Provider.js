@@ -6,6 +6,14 @@ module.exports = (sequelize, DataTypes) => {
     specialty: DataTypes.STRING,
     licenseNumber: DataTypes.STRING,
     yearsOfExperience: DataTypes.INTEGER,
+    languages: {
+      type: DataTypes.JSONB,
+      defaultValue: ["English"],
+    },
+    isOnline: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
 
     onboardingStep: {
       type: DataTypes.STRING,
@@ -31,6 +39,10 @@ module.exports = (sequelize, DataTypes) => {
     tableName: "providers",
     timestamps: true
   });
+
+  Provider.associate = (models) => {
+    Provider.belongsTo(models.User, { foreignKey: "userId" });
+  };
 
   return Provider;
 };

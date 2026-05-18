@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'consultation_detail_screen.dart';
+import '../../utils/auth_token.dart';
 import '../../utils/network_config.dart';
 
 class UserConsultationHistory extends StatefulWidget {
@@ -34,15 +35,23 @@ class _UserConsultationHistoryState extends State<UserConsultationHistory> {
   // ============================
   Future<void> fetchConsultations() async {
     try {
+      final token = await AuthToken.getToken();
+
+      if (token == null || token.isEmpty) {
+        throw Exception("Please log in again");
+      }
+
       final res = await (widget.client ?? http.Client()).get(
-        Uri.parse(
-          "${NetworkConfig.baseUrl}/api/consultations/user/${widget.userId}",
-        ),
+        Uri.parse("${NetworkConfig.baseUrl}/api/consultations"),
+        headers: {
+          "Authorization": "Bearer $token",
+        },
       );
 
       if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
         setState(() {
-          consultations = jsonDecode(res.body);
+          consultations = body is List ? body : body['data'] ?? [];
           isLoading = false;
         });
       } else {
@@ -84,13 +93,13 @@ class _UserConsultationHistoryState extends State<UserConsultationHistory> {
                           horizontal: 12, vertical: 6),
                       child: ListTile(
                         title: Text(
-                          c['diagnosis'] ?? 'No diagnosis',
+                          c['type'] ?? 'Consultation',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         subtitle: Text(
-                          "₦${c['cost']} • ${c['createdAt'] ?? ''}",
+                          "₦${c['price'] ?? c['fee'] ?? '--'} • ${c['status'] ?? ''}",
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {

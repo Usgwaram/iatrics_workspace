@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/socket_manager.dart';
+import '../consultation/user_consultation_history.dart';
+import '../doctors/available_doctors_screen.dart';
+import '../feedback/feedback_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   final String userId;
@@ -63,11 +66,56 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       appBar: AppBar(
         title: const Text("User Dashboard"),
       ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: placeCall,
-          child: const Text("Call Provider"),
-        ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AvailableDoctorsScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.medical_services),
+            label: const Text("Choose Doctor"),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: placeCall,
+            icon: const Icon(Icons.video_call),
+            label: const Text("Call Provider"),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => UserConsultationHistory(
+                    userId: widget.userId,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.history),
+            label: const Text("Consultation History"),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FeedbackScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.rate_review),
+            label: const Text("Complaints"),
+          ),
+        ],
       ),
     );
   }

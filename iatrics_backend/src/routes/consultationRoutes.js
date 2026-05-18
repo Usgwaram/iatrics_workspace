@@ -6,6 +6,8 @@ const { protect } = require("../middleware/authMiddleware");
 
 // CREATE
 router.post("/", protect, controller.createConsultation);
+router.post("/instant", protect, controller.createInstantConsultation);
+router.post("/booking", protect, controller.createBookingConsultation);
 
 // GET ALL
 router.get("/", protect, controller.getConsultations);

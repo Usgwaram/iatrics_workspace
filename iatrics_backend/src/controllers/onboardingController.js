@@ -4,7 +4,7 @@ const { Provider } = require("../models");
 exports.updateProfile = async (req, res) => {
   try {
     const { providerId } = req.params;
-    const { specialty, licenseNumber, yearsOfExperience } = req.body;
+    const { specialty, licenseNumber, yearsOfExperience, languages } = req.body;
 
     const provider = await Provider.findByPk(providerId);
 
@@ -16,6 +16,9 @@ exports.updateProfile = async (req, res) => {
     provider.licenseNumber = licenseNumber ?? provider.licenseNumber;
     provider.yearsOfExperience =
       yearsOfExperience ?? provider.yearsOfExperience;
+    provider.languages = Array.isArray(languages)
+      ? languages
+      : provider.languages;
     provider.onboardingStep = "PROFILE_COMPLETED";
 
     await provider.save();

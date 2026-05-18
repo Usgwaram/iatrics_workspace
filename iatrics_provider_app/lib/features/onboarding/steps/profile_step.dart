@@ -23,12 +23,17 @@ class _ProfileStepState extends State<ProfileStep> {
   final specialtyController = TextEditingController();
   final licenseController = TextEditingController();
   final experienceController = TextEditingController(text: '1');
+  final availableLanguages = const ['English', 'Hausa', 'Yoruba', 'Igbo'];
+  late final Set<String> selectedLanguages;
 
   @override
   void initState() {
     super.initState();
     specialtyController.text = widget.provider.specialty;
     licenseController.text = widget.provider.licenseNumber;
+    selectedLanguages = widget.provider.languages.isEmpty
+        ? {'English'}
+        : widget.provider.languages.toSet();
     if (widget.provider.yearsOfExperience != null) {
       experienceController.text = widget.provider.yearsOfExperience.toString();
     }
@@ -50,6 +55,7 @@ class _ProfileStepState extends State<ProfileStep> {
         specialty: specialtyController.text.trim(),
         licenseNumber: licenseController.text.trim(),
         yearsOfExperience: int.tryParse(experienceController.text.trim()) ?? 0,
+        languages: selectedLanguages.toList(),
       );
 
       if (!mounted) return;
@@ -94,6 +100,33 @@ class _ProfileStepState extends State<ProfileStep> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: "Years Experience"),
             ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Languages spoken",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            ...availableLanguages.map((language) {
+              return CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(language),
+                value: selectedLanguages.contains(language),
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      selectedLanguages.add(language);
+                    } else {
+                      selectedLanguages.remove(language);
+                    }
+                    if (selectedLanguages.isEmpty) {
+                      selectedLanguages.add('English');
+                    }
+                  });
+                },
+              );
+            }),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: widget.controller.isLoading ? null : submit,
