@@ -124,7 +124,7 @@ class OnboardingService {
     final body = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode >= 400) {
-      throw Exception(body['error'] ?? body['message'] ?? 'Onboarding failed');
+      throw Exception(body['message'] ?? body['error'] ?? 'Onboarding failed');
     }
 
     return body;

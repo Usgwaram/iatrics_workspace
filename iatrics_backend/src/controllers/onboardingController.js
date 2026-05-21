@@ -25,7 +25,11 @@ exports.updateProfile = async (req, res) => {
 
     return res.json({ success: true, provider });
   } catch (err) {
-    return res.status(500).json({ error: "Failed to update profile" });
+    console.error("UPDATE PROVIDER PROFILE ERROR:", err);
+    return res.status(500).json({
+      error: "Failed to update profile",
+      message: err.message,
+    });
   }
 };
 
@@ -43,7 +47,11 @@ exports.uploadDocuments = async (req, res) => {
 
     return res.json({ success: true, provider });
   } catch (err) {
-    return res.status(500).json({ error: "Failed to upload documents" });
+    console.error("UPLOAD PROVIDER DOCUMENTS ERROR:", err);
+    return res.status(500).json({
+      error: "Failed to upload documents",
+      message: err.message,
+    });
   }
 };
 
@@ -61,7 +69,11 @@ exports.completeBankSetup = async (req, res) => {
 
     return res.json({ success: true, provider });
   } catch (err) {
-    return res.status(500).json({ error: "Failed to complete bank setup" });
+    console.error("PROVIDER BANK SETUP ERROR:", err);
+    return res.status(500).json({
+      error: "Failed to complete bank setup",
+      message: err.message,
+    });
   }
 };
 
@@ -99,6 +111,10 @@ exports.getStatus = async (req, res) => {
       isApproved: provider.isApproved,
     });
   } catch (err) {
-    return res.status(500).json({ error: "Failed to fetch onboarding status" });
+    console.error("GET PROVIDER ONBOARDING STATUS ERROR:", err);
+    return res.status(500).json({
+      error: "Failed to fetch onboarding status",
+      message: err.message,
+    });
   }
 };

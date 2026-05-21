@@ -9,6 +9,7 @@
     "start": "node server.js",
     "seed": "node src/seeders/adminSeeder.js",
     "db:repair-consultations": "node scripts/repairConsultationSchema.js",
+    "db:repair-providers": "node scripts/repairProviderSchema.js",
     "test": "jest --runInBand",
     "load:consultations": "k6 run load-tests/consultations.k6.js",
     "stress:consultations": "K6_SCENARIO=stress k6 run load-tests/consultations.k6.js"
