@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:http/http.dart' as http;
 import '../models/provider_model.dart';
@@ -18,18 +19,7 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    final response = await _client
-        .post(
-          Uri.parse("$baseUrl/api/auth/login"),
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: jsonEncode({
-            "email": email,
-            "password": password,
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
+    final response = await _postLogin(email: email, password: password);
 
     final data = jsonDecode(response.body);
 
@@ -52,6 +42,34 @@ class AuthService {
             "isApproved": false,
           },
     };
+  }
+
+  Future<http.Response> _postLogin({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      return await _client
+          .post(
+            Uri.parse("$baseUrl/api/auth/login"),
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: jsonEncode({
+              "email": email,
+              "password": password,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
+    } on TimeoutException {
+      throw Exception(
+        "Login timed out. Check that the API is reachable at $baseUrl.",
+      );
+    } catch (error) {
+      throw Exception(
+        "Could not connect to the API at $baseUrl. ${error.toString()}",
+      );
+    }
   }
 }
 

@@ -26,6 +26,11 @@
 	<string>This app needs camera access for video consultation.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs microphone access for video consultation.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
