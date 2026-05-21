@@ -29,11 +29,15 @@ class _AppRootState extends State<AppRoot> with WidgetsBindingObserver {
 
     if (!widget.enableExternalServices) return;
 
-    // INIT SOCKET + CALL ONCE
-    AppInitializer.init(
-      userId: widget.userId,
-      role: "PROVIDER",
-    );
+    try {
+      // INIT SOCKET + CALL ONCE
+      AppInitializer.init(
+        userId: widget.userId,
+        role: "PROVIDER",
+      );
+    } catch (error) {
+      debugPrint("Provider app initialization skipped: $error");
+    }
 
     // LISTENER (VERY IMPORTANT)
     CallService.instance.onIncomingCall = (data) async {
@@ -53,7 +57,9 @@ class _AppRootState extends State<AppRoot> with WidgetsBindingObserver {
     };
 
     // INIT AGORA ONCE
-    AgoraService.instance.init();
+    AgoraService.instance.init().catchError((error) {
+      debugPrint("Agora initialization skipped: $error");
+    });
   }
 
   @override

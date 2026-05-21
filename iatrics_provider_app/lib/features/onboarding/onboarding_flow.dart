@@ -10,12 +10,14 @@ import 'steps/profile_step.dart';
 class OnboardingFlow extends StatefulWidget {
   final int providerId;
   final String token;
+  final ProviderModel? initialProvider;
   final OnboardingController? controller;
 
   const OnboardingFlow({
     super.key,
     this.providerId = 1,
     this.token = 'demo-token',
+    this.initialProvider,
     this.controller,
   });
 
@@ -31,6 +33,11 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     super.initState();
     controller = widget.controller ?? OnboardingController();
     controller.addListener(_onControllerChanged);
+
+    if (widget.initialProvider != null && controller.provider == null) {
+      controller.setProvider(widget.initialProvider!);
+    }
+
     controller
         .loadStatus(
           providerId: widget.providerId,

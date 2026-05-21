@@ -87,10 +87,12 @@ class OnboardingService {
   }
 
   Future<Map<String, dynamic>> _get(String path, String token) async {
-    final response = await _client.get(
-      Uri.parse('$baseUrl$path'),
-      headers: _headers(token),
-    );
+    final response = await _client
+        .get(
+          Uri.parse('$baseUrl$path'),
+          headers: _headers(token),
+        )
+        .timeout(const Duration(seconds: 8));
 
     return _decode(response);
   }
@@ -100,11 +102,13 @@ class OnboardingService {
     String token,
     Map<String, dynamic> payload,
   ) async {
-    final response = await _client.post(
-      Uri.parse('$baseUrl$path'),
-      headers: _headers(token),
-      body: jsonEncode(payload),
-    );
+    final response = await _client
+        .post(
+          Uri.parse('$baseUrl$path'),
+          headers: _headers(token),
+          body: jsonEncode(payload),
+        )
+        .timeout(const Duration(seconds: 12));
 
     return _decode(response);
   }

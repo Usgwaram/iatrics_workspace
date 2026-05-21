@@ -49,6 +49,7 @@ class MyApp extends StatelessWidget {
                         ? OnboardingFlow(
                             providerId: provider.id,
                             token: token,
+                            initialProvider: provider,
                             controller: onboardingController,
                           )
                         : ProviderDashboardScreen(
