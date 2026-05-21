@@ -44,6 +44,44 @@ class AuthService {
     };
   }
 
+  Future<void> registerProvider({
+    required String fullName,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse("$baseUrl/api/auth/register"),
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: jsonEncode({
+              "fullName": fullName,
+              "email": email,
+              "password": password,
+              "role": "PROVIDER",
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode >= 400) {
+        throw Exception(data["message"] ?? data.toString());
+      }
+    } on TimeoutException {
+      throw Exception(
+        "Registration timed out. Check that the API is reachable at $baseUrl.",
+      );
+    } catch (error) {
+      if (error is Exception) rethrow;
+      throw Exception(
+        "Could not connect to the API at $baseUrl. ${error.toString()}",
+      );
+    }
+  }
+
   Future<http.Response> _postLogin({
     required String email,
     required String password,
@@ -91,5 +129,14 @@ class DemoAuthService extends AuthService {
         isApproved: false,
       ),
     };
+  }
+
+  @override
+  Future<void> registerProvider({
+    required String fullName,
+    required String email,
+    required String password,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 }

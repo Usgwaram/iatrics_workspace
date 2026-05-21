@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const db = require("../models");
-const { User } = db;
+const { Provider, User } = db;
 
 const ApiContract = require("../contracts/apiContract");
 const { jwtSecret } = require("../config/secrets");
@@ -12,7 +12,17 @@ const { jwtSecret } = require("../config/secrets");
 // ============================
 exports.register = async (req, res) => {
   try {
-    const { fullName, email, password, phone } = req.body;
+    const {
+      fullName,
+      email,
+      password,
+      phone,
+      role = "USER",
+      specialty,
+      licenseNumber,
+      yearsOfExperience,
+      languages,
+    } = req.body;
 
     if (!email || !password || !fullName) {
       return res
@@ -34,8 +44,21 @@ exports.register = async (req, res) => {
       fullName,
       email,
       phone,
+      role,
       password: hashed,
     });
+
+    let provider = null;
+
+    if (role === "PROVIDER") {
+      provider = await Provider.create({
+        userId: user.id,
+        specialty,
+        licenseNumber,
+        yearsOfExperience,
+        languages: Array.isArray(languages) ? languages : ["English"],
+      });
+    }
 
     return res.status(201).json(
       ApiContract.success(
@@ -43,6 +66,8 @@ exports.register = async (req, res) => {
           id: user.id,
           fullName: user.fullName,
           email: user.email,
+          role: user.role,
+          provider,
         },
         "User registered"
       )
@@ -67,7 +92,15 @@ exports.login = async (req, res) => {
         .json(ApiContract.fail("Email and password required", "VALIDATION_ERROR"));
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({
+      where: { email },
+      include: [
+        {
+          model: Provider,
+          required: false,
+        },
+      ],
+    });
 
     if (!user) {
       return res
@@ -99,6 +132,7 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
       },
+      provider: user.Provider,
     });
    } catch (err) {
     console.error("LOGIN ERROR:", err);

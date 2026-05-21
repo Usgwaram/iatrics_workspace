@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../services/auth_service.dart';
+
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final AuthService service;
+
+  RegisterScreen({
+    super.key,
+    AuthService? service,
+  }) : service = service ?? AuthService();
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -13,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final emailController = TextEditingController();
 
   final passwordController = TextEditingController();
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -23,8 +31,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void register() {
-    Navigator.pop(context);
+  Future<void> register() async {
+    if (isLoading) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await widget.service.registerProvider(
+        fullName: nameController.text.trim(),
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Provider account created")),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll("Exception:", ""))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -33,36 +72,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         title: const Text("Register"),
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: "Name",
-              ),
+        children: [
+          TextField(
+            controller: nameController,
+            decoration: const InputDecoration(
+              labelText: "Name",
             ),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: "Email",
-              ),
+          ),
+          TextField(
+            controller: emailController,
+            decoration: const InputDecoration(
+              labelText: "Email",
             ),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "Password",
-              ),
+          ),
+          TextField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: "Password",
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: register,
-              child: const Text("Register"),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: isLoading ? null : register,
+            child: Text(isLoading ? "Creating..." : "Register"),
+          ),
+        ],
       ),
     );
   }
