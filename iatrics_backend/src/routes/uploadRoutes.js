@@ -37,4 +37,21 @@ router.post(
   }
 );
 
+router.post(
+  "/provider/:providerId/document",
+  protect,
+  upload.single("file"),
+  async (req, res) => {
+    return res.status(201).json({
+      success: true,
+      message: "Provider document uploaded",
+      providerId: req.params.providerId,
+      file: {
+        filename: req.file.filename,
+        path: req.file.path,
+      },
+    });
+  }
+);
+
 module.exports = router;

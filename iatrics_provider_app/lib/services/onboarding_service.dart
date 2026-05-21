@@ -66,6 +66,28 @@ class OnboardingService {
     return ProviderModel.fromJson(body['provider']);
   }
 
+  Future<String> uploadProviderDocument({
+    required int providerId,
+    required String token,
+    required String filePath,
+  }) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/api/uploads/provider/$providerId/document'),
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+    final streamedResponse =
+        await request.send().timeout(const Duration(seconds: 30));
+    final response = await http.Response.fromStream(streamedResponse);
+    final body = _decode(response);
+    final file = body['file'] as Map<String, dynamic>;
+
+    return file['path']?.toString() ?? file['filename'].toString();
+  }
+
   Future<ProviderModel> submitBankSetup({
     required int providerId,
     required String token,

@@ -26,6 +26,10 @@ const webhookRoutes = require("./src/routes/webhook");
 const agoraRoutes = require("./src/routes/agora");
 const scheduleRoutes = require("./src/routes/scheduleRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
+const doctorRoutes = require("./src/routes/doctorRoutes");
+const pricingRoutes = require("./src/routes/pricingRoutes");
+const uploadRoutes = require("./src/routes/uploadRoutes");
+const feedbackRoutes = require("./src/routes/feedbackRoutes");
 const { assertProductionSecrets } = require("./src/config/secrets");
 // security (safe fallback if missing in prod)
 let helmet, rateLimit, xss, hpp, cron;
@@ -105,6 +109,10 @@ app.use("/api/agora", agoraRoutes);
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/payments", webhookRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/doctors", doctorRoutes);
+app.use("/api/pricing", pricingRoutes);
+app.use("/api/uploads", uploadRoutes);
+app.use("/api/feedback", feedbackRoutes);
 // health check
 app.get("/", (req, res) => {
   res.send("🚀 Iatrics API + Socket Running");
