@@ -83,61 +83,57 @@ class _ProfileStepState extends State<ProfileStep> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Complete Profile")),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: specialtyController,
-              decoration: const InputDecoration(labelText: "Specialty"),
+        children: [
+          TextField(
+            controller: specialtyController,
+            decoration: const InputDecoration(labelText: "Specialty"),
+          ),
+          TextField(
+            controller: licenseController,
+            decoration: const InputDecoration(labelText: "License Number"),
+          ),
+          TextField(
+            controller: experienceController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: "Years Experience"),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "Languages spoken",
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-            TextField(
-              controller: licenseController,
-              decoration: const InputDecoration(labelText: "License Number"),
+          ),
+          ...availableLanguages.map((language) {
+            return CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(language),
+              value: selectedLanguages.contains(language),
+              onChanged: (value) {
+                setState(() {
+                  if (value == true) {
+                    selectedLanguages.add(language);
+                  } else {
+                    selectedLanguages.remove(language);
+                  }
+                  if (selectedLanguages.isEmpty) {
+                    selectedLanguages.add('English');
+                  }
+                });
+              },
+            );
+          }),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: widget.controller.isLoading ? null : submit,
+            child: Text(
+              widget.controller.isLoading ? "Submitting..." : "Submit Profile",
             ),
-            TextField(
-              controller: experienceController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: "Years Experience"),
-            ),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Languages spoken",
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            ...availableLanguages.map((language) {
-              return CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(language),
-                value: selectedLanguages.contains(language),
-                onChanged: (value) {
-                  setState(() {
-                    if (value == true) {
-                      selectedLanguages.add(language);
-                    } else {
-                      selectedLanguages.remove(language);
-                    }
-                    if (selectedLanguages.isEmpty) {
-                      selectedLanguages.add('English');
-                    }
-                  });
-                },
-              );
-            }),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: widget.controller.isLoading ? null : submit,
-              child: Text(
-                widget.controller.isLoading
-                    ? "Submitting..."
-                    : "Submit Profile",
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

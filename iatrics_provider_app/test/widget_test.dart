@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iatrics_provider_app/features/auth/auth_controller.dart';
 import 'package:iatrics_provider_app/features/auth/login_screen.dart';
+import 'package:iatrics_provider_app/services/auth_service.dart';
 import 'package:provider/provider.dart';
 
 void main() {
   testWidgets('LoginScreen renders provider login form', (tester) async {
     await tester.pumpWidget(
       ChangeNotifierProvider(
-        create: (_) => AuthController(),
+        create: (_) => AuthController(authService: DemoAuthService()),
         child: const MaterialApp(
           home: LoginScreen(),
         ),
@@ -25,7 +26,7 @@ void main() {
 
   testWidgets('LoginScreen submits credentials and updates AuthController',
       (tester) async {
-    final auth = AuthController();
+    final auth = AuthController(authService: DemoAuthService());
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(

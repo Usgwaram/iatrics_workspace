@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iatrics_provider_app/features/auth/auth_controller.dart';
+import 'package:iatrics_provider_app/services/auth_service.dart';
 
 void main() {
   group('AuthController', () {
     test('login sets loading, token, provider, and notifies listeners',
         () async {
-      final controller = AuthController();
+      final controller = AuthController(authService: DemoAuthService());
       var notifications = 0;
       final loadingStates = <bool>[];
 
@@ -34,7 +35,7 @@ void main() {
     });
 
     test('logout clears authenticated state', () async {
-      final controller = AuthController();
+      final controller = AuthController(authService: DemoAuthService());
 
       await controller.login(
         email: 'provider@test.com',

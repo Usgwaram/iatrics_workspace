@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../models/provider_model.dart';
+import '../../services/auth_service.dart';
 
 class AuthController extends ChangeNotifier {
+  final AuthService authService;
+
+  AuthController({
+    AuthService? authService,
+  }) : authService = authService ?? AuthService();
+
   bool isLoading = false;
   bool isLoggedIn = false;
 
@@ -14,27 +21,28 @@ class AuthController extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    isLoading = true;
-    notifyListeners();
+    try {
+      isLoading = true;
+      notifyListeners();
 
-    await Future.delayed(
-      const Duration(seconds: 1),
-    );
+      final result = await authService.login(
+        email: email,
+        password: password,
+      );
 
-    token = "test_provider_token";
+      token = result["token"]?.toString();
+      final providerData = result["provider"];
+      provider = providerData is ProviderModel
+          ? providerData
+          : ProviderModel.fromJson(
+              Map<String, dynamic>.from(providerData as Map),
+            );
 
-    provider = ProviderModel(
-      id: 2,
-      fullName: "Test Provider",
-      email: email,
-      onboardingStep: "REGISTERED",
-      isApproved: false,
-    );
-
-    isLoggedIn = true;
-
-    isLoading = false;
-    notifyListeners();
+      isLoggedIn = true;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   void logout() {

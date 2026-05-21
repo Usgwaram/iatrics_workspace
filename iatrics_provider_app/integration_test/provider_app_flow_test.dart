@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:iatrics_provider_app/features/onboarding/onboarding_controller.dart';
 import 'package:iatrics_provider_app/main.dart';
+import 'package:iatrics_provider_app/features/auth/auth_controller.dart';
+import 'package:iatrics_provider_app/services/auth_service.dart';
 import 'package:iatrics_provider_app/services/onboarding_service.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -28,6 +30,7 @@ void main() {
     await tester.pumpWidget(
       MyApp(
         enableExternalServices: false,
+        authController: AuthController(authService: DemoAuthService()),
         onboardingController: onboardingController(),
       ),
     );
@@ -57,7 +60,12 @@ void main() {
 
   testWidgets('provider can open and complete registration screen',
       (tester) async {
-    await tester.pumpWidget(const MyApp(enableExternalServices: false));
+    await tester.pumpWidget(
+      MyApp(
+        enableExternalServices: false,
+        authController: AuthController(authService: DemoAuthService()),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final createAccount =

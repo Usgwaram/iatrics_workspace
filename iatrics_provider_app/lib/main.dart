@@ -16,17 +16,19 @@ void main() {
 class MyApp extends StatelessWidget {
   final bool enableExternalServices;
   final OnboardingController? onboardingController;
+  final AuthController? authController;
 
   const MyApp({
     super.key,
     this.enableExternalServices = true,
     this.onboardingController,
+    this.authController,
   });
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AuthController(),
+      create: (_) => authController ?? AuthController(),
       child: Consumer<AuthController>(
         builder: (context, auth, _) {
           final provider = auth.provider;
