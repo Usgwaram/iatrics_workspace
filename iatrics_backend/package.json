@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "admin:create": "node scripts/createAdmin.js",
     "seed": "node src/seeders/adminSeeder.js",
     "db:repair-consultations": "node scripts/repairConsultationSchema.js",
     "db:repair-providers": "node scripts/repairProviderSchema.js",
