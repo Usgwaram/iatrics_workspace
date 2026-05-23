@@ -13,8 +13,10 @@ class OnboardingController extends ChangeNotifier {
   ProviderModel? provider;
   bool isLoading = false;
   String? error;
+  bool _isDisposed = false;
 
   void setProvider(ProviderModel data) {
+    if (_isDisposed) return;
     provider = data;
     notifyListeners();
   }
@@ -81,12 +83,14 @@ class OnboardingController extends ChangeNotifier {
   }
 
   void clear() {
+    if (_isDisposed) return;
     provider = null;
     error = null;
     notifyListeners();
   }
 
   Future<void> _run(Future<void> Function() action) async {
+    if (_isDisposed) return;
     isLoading = true;
     error = null;
     notifyListeners();
@@ -94,11 +98,19 @@ class OnboardingController extends ChangeNotifier {
     try {
       await action();
     } catch (e) {
+      if (_isDisposed) rethrow;
       error = e.toString().replaceAll('Exception:', '').trim();
       rethrow;
     } finally {
+      if (_isDisposed) return;
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 }

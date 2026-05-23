@@ -77,6 +77,14 @@ void main() {
 
     expect(find.text('Bank Setup'), findsOneWidget);
 
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Account Number'),
+      '0123456789',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Account Name'),
+      'Provider',
+    );
     await tester.tap(find.text('Complete Bank Setup'));
     await tester.pumpAndSettle();
 

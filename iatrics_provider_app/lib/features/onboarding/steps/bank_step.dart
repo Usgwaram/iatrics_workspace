@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../onboarding_controller.dart';
-import 'approval_waiting.dart';
 
 class BankStep extends StatefulWidget {
   final String providerId;
@@ -53,15 +52,6 @@ class _BankStepState extends State<BankStep> {
         bankCode: bankCode,
         accountNumber: accountNumber,
         accountName: accountName,
-      );
-
-      if (!context.mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const WaitingApprovalScreen(),
-        ),
       );
     } catch (e) {
       if (!context.mounted) return;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../onboarding_controller.dart';
-import 'bank_step.dart';
 
 class DocumentStep extends StatefulWidget {
   final String providerId;
@@ -56,19 +55,6 @@ class _DocumentStepState extends State<DocumentStep> {
         providerId: providerIdValue,
         token: widget.token,
         licenseDocumentUrl: uploadedDocumentUrl ?? "submitted",
-      );
-
-      if (!context.mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => BankStep(
-            providerId: widget.providerId,
-            token: widget.token,
-            controller: widget.controller,
-          ),
-        ),
       );
     } catch (e) {
       if (!context.mounted) return;
