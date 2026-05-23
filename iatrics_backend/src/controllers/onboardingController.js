@@ -57,12 +57,24 @@ exports.uploadDocuments = async (req, res) => {
 
 exports.completeBankSetup = async (req, res) => {
   try {
+    const { bankCode, accountNumber, accountName } = req.body;
+
+    if (!bankCode || !accountNumber || !accountName) {
+      return res.status(400).json({
+        error: "Missing bank details",
+        message: "Bank code, account number, and account name are required",
+      });
+    }
+
     const provider = await Provider.findByPk(req.params.providerId);
 
     if (!provider) {
       return res.status(404).json({ error: "Provider not found" });
     }
 
+    provider.bankCode = bankCode;
+    provider.accountNumber = accountNumber;
+    provider.accountName = accountName;
     provider.onboardingStep = "BANK_SETUP_DONE";
 
     await provider.save();

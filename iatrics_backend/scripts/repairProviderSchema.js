@@ -31,6 +31,33 @@ async function repairProviderSchema() {
   } else {
     console.log("providers.isOnline already exists");
   }
+
+  if (!table.bankCode) {
+    await queryInterface.addColumn("providers", "bankCode", {
+      type: Sequelize.STRING,
+    });
+    console.log("Added providers.bankCode");
+  } else {
+    console.log("providers.bankCode already exists");
+  }
+
+  if (!table.accountNumber) {
+    await queryInterface.addColumn("providers", "accountNumber", {
+      type: Sequelize.STRING,
+    });
+    console.log("Added providers.accountNumber");
+  } else {
+    console.log("providers.accountNumber already exists");
+  }
+
+  if (!table.accountName) {
+    await queryInterface.addColumn("providers", "accountName", {
+      type: Sequelize.STRING,
+    });
+    console.log("Added providers.accountName");
+  } else {
+    console.log("providers.accountName already exists");
+  }
 }
 
 repairProviderSchema()

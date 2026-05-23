@@ -6,6 +6,9 @@ module.exports = (sequelize, DataTypes) => {
     specialty: DataTypes.STRING,
     licenseNumber: DataTypes.STRING,
     yearsOfExperience: DataTypes.INTEGER,
+    bankCode: DataTypes.STRING,
+    accountNumber: DataTypes.STRING,
+    accountName: DataTypes.STRING,
     languages: {
       type: DataTypes.JSONB,
       defaultValue: ["English"],
