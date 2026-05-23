@@ -11,6 +11,7 @@ require("dotenv").config({ path: envFile });
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+const path = require("path");
 const { Server } = require("socket.io");
 const db = require("./src/models");
 
@@ -97,6 +98,7 @@ if (rateLimit && !rateLimitDisabled) {
 // ======================
 // ROUTES
 // ======================
+app.use("/admin", express.static(path.join(__dirname, "admin")));
 app.use("/api/auth", require("./src/routes/authRoutes"));
 app.use("/api/users", userRoutes);
 app.use("/api/providers", providerRoutes);

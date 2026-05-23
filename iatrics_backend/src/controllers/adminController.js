@@ -69,6 +69,12 @@ exports.getUsers = async (req, res) => {
 exports.getProviders = async (req, res) => {
   try {
     const providers = await Provider.findAll({
+      include: [
+        {
+          model: User,
+          attributes: ["id", "fullName", "email", "phone", "role"],
+        },
+      ],
       order: [["createdAt", "DESC"]],
     });
 

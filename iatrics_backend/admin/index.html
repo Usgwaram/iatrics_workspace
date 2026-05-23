@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Iatrics Admin</title>
+    <link rel="stylesheet" href="/admin/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="brand-panel">
+        <div class="logo-mark">+</div>
+        <p class="eyebrow">Iatrics Admin</p>
+        <h1>Provider approvals and platform oversight</h1>
+        <p class="muted">
+          Review onboarding providers, approve verified doctors, and monitor
+          the launch dashboard from one browser page.
+        </p>
+      </section>
+
+      <section id="loginView" class="panel auth-panel">
+        <div>
+          <p class="eyebrow">Secure Entry</p>
+          <h2>Admin sign in</h2>
+        </div>
+
+        <form id="loginForm" class="form">
+          <label>
+            Email
+            <input
+              id="email"
+              type="email"
+              autocomplete="username"
+              value="admin@iatrics.ng"
+              required
+            />
+          </label>
+
+          <label>
+            Password
+            <input
+              id="password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Enter admin password"
+              required
+            />
+          </label>
+
+          <button id="loginButton" type="submit">Enter Admin</button>
+          <p id="loginMessage" class="message" role="status"></p>
+        </form>
+      </section>
+
+      <section id="dashboardView" class="dashboard hidden">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Control Room</p>
+            <h2>Admin Dashboard</h2>
+          </div>
+          <div class="actions">
+            <button id="refreshButton" type="button" class="secondary">
+              Refresh
+            </button>
+            <button id="logoutButton" type="button" class="ghost">Logout</button>
+          </div>
+        </header>
+
+        <section id="summaryGrid" class="summary-grid" aria-live="polite"></section>
+
+        <section class="panel providers-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Provider Review</p>
+              <h3>Onboarding providers</h3>
+            </div>
+            <p id="providerCount" class="muted"></p>
+          </div>
+
+          <div id="dashboardMessage" class="message" role="status"></div>
+          <div id="providersList" class="providers-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/admin/app.js" defer></script>
+  </body>
+</html>
