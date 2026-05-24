@@ -26,10 +26,17 @@ class SocketService {
     _socket!.connect();
 
     _socket!.onConnect((_) {
-      _socket!.emit("register", {
-        "userId": userId,
-        "role": role,
-      });
+      final normalizedRole = role.toUpperCase();
+
+      if (normalizedRole == "PROVIDER") {
+        _socket!.emit("register-provider", userId);
+      } else {
+        _socket!.emit("register-user", userId);
+      }
+    });
+
+    _socket!.onConnectError((error) {
+      print("❌ Provider socket connect error for $baseUrl: $error");
     });
   }
 

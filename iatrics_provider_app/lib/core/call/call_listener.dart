@@ -6,7 +6,9 @@ class CallListener {
   static void start(BuildContext context) {
     CallService.instance.onIncomingCall = (data) {
       final channelName = data["channelName"];
-      final callerId = data["callerId"];
+      final callerId = int.tryParse(data["callerId"]?.toString() ?? "") ??
+          int.tryParse(data["userId"]?.toString() ?? "") ??
+          0;
 
       Navigator.of(context).push(
         MaterialPageRoute(

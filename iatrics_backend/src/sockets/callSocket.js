@@ -20,8 +20,9 @@ module.exports = (io) => {
     // REGISTER USER
     // =========================
     socket.on("register-user", (userId) => {
-      users.set(userId, socket.id);
+      users.set(userId.toString(), socket.id);
       socket.join(`user-${userId}`);
+      console.log("👤 User registered for calls:", userId);
     });
 
     // =========================
@@ -29,6 +30,18 @@ module.exports = (io) => {
     // =========================
     socket.on("register-provider", (providerId) => {
       providers.set(providerId.toString(), socket.id);
+      console.log("🩺 Provider registered for calls:", providerId);
+    });
+
+    socket.on("register", ({ userId, role }) => {
+      if (role?.toUpperCase() === "PROVIDER") {
+        providers.set(userId.toString(), socket.id);
+        console.log("🩺 Provider registered for calls:", userId);
+      } else {
+        users.set(userId.toString(), socket.id);
+        socket.join(`user-${userId}`);
+        console.log("👤 User registered for calls:", userId);
+      }
     });
 
     // =========================
@@ -37,19 +50,32 @@ module.exports = (io) => {
     socket.on("place-call", async (data) => {
       const { userId, providerId, channelName } = data;
 
-      await Consultation.create({
-        userId,
-        providerId,
-        channelName,
-        status: "active",
-        duration: 0,
-        cost: 0,
-      });
+      try {
+        await Consultation.create({
+          userId,
+          providerId,
+          channelName,
+          status: "active",
+          duration: 0,
+          price: 0,
+        });
+      } catch (err) {
+        console.error("❌ Failed to create call consultation:", err.message);
+      }
 
       const providerSocket = providers.get(providerId.toString());
 
       if (providerSocket) {
-        io.to(providerSocket).emit("incoming-call", data);
+        io.to(providerSocket).emit("incoming-call", {
+          ...data,
+          callerId: data.callerId ?? userId,
+        });
+      } else {
+        socket.emit("call-declined", {
+          channelName,
+          providerId,
+          reason: "provider_offline",
+        });
       }
     });
 

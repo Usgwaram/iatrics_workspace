@@ -51,7 +51,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     await _stopRingtone();
     if (!mounted) return;
 
-    CallService.instance.acceptCall(widget.channelName);
+    CallService.instance.acceptCall(
+      widget.channelName,
+      userId: widget.callerId,
+    );
 
     Navigator.push(
       context,
@@ -68,7 +71,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     await _stopRingtone();
     if (!mounted) return;
 
-    CallService.instance.declineCall(widget.channelName);
+    CallService.instance.declineCall(
+      widget.channelName,
+      userId: widget.callerId,
+    );
     Navigator.pop(context);
   }
 

@@ -14,17 +14,13 @@ class SocketManager {
   void initUser({
     required String userId,
   }) {
-    _socket.emit("join_user", {
-      "userId": userId,
-    });
+    _socket.emit("register-user", userId);
   }
 
   void initProvider({
     required String providerId,
   }) {
-    _socket.emit("join_provider", {
-      "providerId": providerId,
-    });
+    _socket.emit("register-provider", providerId);
   }
 
   // =========================
@@ -46,34 +42,35 @@ class SocketManager {
     required String toId,
     required String channel,
   }) {
-    _socket.emit("call_start", {
-      "from": fromId,
-      "to": toId,
-      "channel": channel,
+    _socket.emit("place-call", {
+      "userId": fromId,
+      "callerId": int.tryParse(fromId) ?? fromId,
+      "providerId": toId,
+      "channelName": channel,
     });
   }
 
   void acceptCall({
     required String channel,
   }) {
-    _socket.emit("call_accept", {
-      "channel": channel,
+    _socket.emit("accept-call", {
+      "channelName": channel,
     });
   }
 
   void rejectCall({
     required String channel,
   }) {
-    _socket.emit("call_reject", {
-      "channel": channel,
+    _socket.emit("decline-call", {
+      "channelName": channel,
     });
   }
 
   void endCall({
     required String channel,
   }) {
-    _socket.emit("call_end", {
-      "channel": channel,
+    _socket.emit("end-call", {
+      "channelName": channel,
     });
   }
 
@@ -82,19 +79,19 @@ class SocketManager {
   // =========================
 
   void onIncomingCall(Function(dynamic) callback) {
-    _socket.on("incoming_call", callback);
+    _socket.on("incoming-call", callback);
   }
 
   void onCallAccepted(Function(dynamic) callback) {
-    _socket.on("call_accepted", callback);
+    _socket.on("call-accepted", callback);
   }
 
   void onCallRejected(Function(dynamic) callback) {
-    _socket.on("call_rejected", callback);
+    _socket.on("call-declined", callback);
   }
 
   void onCallEnded(Function(dynamic) callback) {
-    _socket.on("call_ended", callback);
+    _socket.on("call-ended", callback);
   }
 
   // =========================

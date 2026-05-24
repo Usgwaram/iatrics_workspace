@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../../utils/network_config.dart';
+
 class UserRegisterScreen extends StatefulWidget {
   final http.Client? client;
 
@@ -26,7 +28,7 @@ class _UserRegisterScreenState extends State<UserRegisterScreen> {
     setState(() => loading = true);
 
     final res = await (widget.client ?? http.Client()).post(
-      Uri.parse("http://YOUR_IP:5002/api/users/register"),
+      Uri.parse("${NetworkConfig.baseUrl}/api/users/register"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "name": nameCtrl.text,

@@ -43,14 +43,17 @@ class _AppRootState extends State<AppRoot> with WidgetsBindingObserver {
     CallService.instance.onIncomingCall = (data) async {
       if (!mounted) return;
 
-      final channel = data["channelName"];
+      final channel = data["channelName"]?.toString() ?? "";
+      final callerId = int.tryParse(data["callerId"]?.toString() ?? "") ??
+          int.tryParse(data["userId"]?.toString() ?? "") ??
+          0;
 
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => IncomingCallScreen(
             channelName: channel,
-            callerId: data["callerId"],
+            callerId: callerId,
           ),
         ),
       );

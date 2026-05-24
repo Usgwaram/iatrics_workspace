@@ -15,13 +15,17 @@ class SocketService {
     required String baseUrl,
     required String token,
   }) {
-    if (_initialized) return;
+    if (_initialized || socket?.connected == true) return;
 
     socket = io.io(
       baseUrl,
       io.OptionBuilder()
           .setTransports(['websocket'])
-          .enableAutoConnect()
+          .disableAutoConnect()
+          .setTimeout(10000)
+          .enableReconnection()
+          .setReconnectionAttempts(5)
+          .setReconnectionDelay(1000)
           .setAuth({'token': token}) // 🔥 AUTH SAFE SOCKET
           .build(),
     );
@@ -29,7 +33,7 @@ class SocketService {
     socket!.onConnect((_) {
       _connected = true;
       _initialized = true;
-      print("🟢 Socket connected");
+      print("🟢 Socket connected: $baseUrl");
     });
 
     socket!.onDisconnect((_) {
@@ -39,7 +43,7 @@ class SocketService {
     });
 
     socket!.onConnectError((err) {
-      print("❌ Socket connect error: $err");
+      print("❌ Socket connect error for $baseUrl: $err");
     });
 
     socket!.connect();

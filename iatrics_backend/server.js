@@ -14,6 +14,7 @@ const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
 const db = require("./src/models");
+const setupCallSocket = require("./src/sockets/callSocket");
 
 // routes
 const authRoutes = require("./src/routes/authRoutes");
@@ -61,6 +62,7 @@ const io = new Server(server, {
 });
 
 app.set("io", io);
+setupCallSocket(io);
 
 // ======================
 // BASIC MIDDLEWARE

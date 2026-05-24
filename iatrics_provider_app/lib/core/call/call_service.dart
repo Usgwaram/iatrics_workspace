@@ -26,15 +26,23 @@ class CallService {
     _initialized = true;
   }
 
-  void acceptCall(String channelName) {
+  void acceptCall(
+    String channelName, {
+    required int userId,
+  }) {
     _socket.emit("accept-call", {
       "channelName": channelName,
+      "userId": userId,
     });
   }
 
-  void declineCall(String channelName) {
+  void declineCall(
+    String channelName, {
+    required int userId,
+  }) {
     _socket.emit("decline-call", {
       "channelName": channelName,
+      "userId": userId,
     });
   }
 
