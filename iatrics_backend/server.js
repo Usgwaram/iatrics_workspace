@@ -130,6 +130,7 @@ app.get("/", (req, res) => {
 // ======================
 
 const PORT = process.env.PORT || 5002;
+const HOST = process.env.HOST || "0.0.0.0";
 
 const startServer = async () => {
   try {
@@ -143,8 +144,8 @@ const startServer = async () => {
 
     console.log("🧠 DB synced");
 
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on ${PORT}`);
+    server.listen(PORT, HOST, () => {
+      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
     });
   } catch (error) {
     console.error("❌ Startup error:", error);
