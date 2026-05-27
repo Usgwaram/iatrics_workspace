@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/socket_manager.dart';
 import '../consultation/user_consultation_history.dart';
 import '../doctors/available_doctors_screen.dart';
+import '../doctors/doctor_service.dart';
 import '../feedback/feedback_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
@@ -19,8 +20,8 @@ class UserDashboardScreen extends StatefulWidget {
 
 class _UserDashboardScreenState extends State<UserDashboardScreen> {
   final SocketManager socketManager = SocketManager.instance;
-
-  final String providerId = "2";
+  final DoctorService doctorService = DoctorService();
+  bool isCalling = false;
 
   @override
   void initState() {
@@ -45,14 +46,43 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     });
   }
 
-  void placeCall() {
-    final channelName = "call_${DateTime.now().millisecondsSinceEpoch}";
+  Future<void> placeCall() async {
+    setState(() {
+      isCalling = true;
+    });
 
-    socketManager.startCall(
-      fromId: widget.userId,
-      toId: providerId,
-      channel: channelName,
-    );
+    try {
+      final onlineDoctors = await doctorService.listDoctors(onlineOnly: true);
+
+      if (!mounted) return;
+
+      if (onlineDoctors.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No provider is online right now")),
+        );
+        return;
+      }
+
+      final providerId = onlineDoctors.first['id'].toString();
+      final channelName = "call_${DateTime.now().millisecondsSinceEpoch}";
+
+      socketManager.startCall(
+        fromId: widget.userId,
+        toId: providerId,
+        channel: channelName,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isCalling = false;
+        });
+      }
+    }
   }
 
   @override
@@ -83,9 +113,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           ),
           const SizedBox(height: 12),
           ElevatedButton.icon(
-            onPressed: placeCall,
+            onPressed: isCalling ? null : placeCall,
             icon: const Icon(Icons.video_call),
-            label: const Text("Call Provider"),
+            label: Text(isCalling ? "Calling..." : "Call Online Provider"),
           ),
           const SizedBox(height: 12),
           ElevatedButton.icon(

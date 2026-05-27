@@ -1,5 +1,6 @@
 const {
   Consultation,
+  Provider,
   UserWallet,
   ProviderWallet,
   PlatformWallet,
@@ -28,14 +29,28 @@ module.exports = (io) => {
     // =========================
     // REGISTER PROVIDER
     // =========================
-    socket.on("register-provider", (providerId) => {
+    socket.on("register-provider", async (providerId) => {
       providers.set(providerId.toString(), socket.id);
+      socket.data.providerId = providerId.toString();
+      await Provider.update(
+        { isOnline: true },
+        { where: { id: providerId } }
+      ).catch((err) => {
+        console.error("❌ Failed to mark provider online:", err.message);
+      });
       console.log("🩺 Provider registered for calls:", providerId);
     });
 
-    socket.on("register", ({ userId, role }) => {
+    socket.on("register", async ({ userId, role }) => {
       if (role?.toUpperCase() === "PROVIDER") {
         providers.set(userId.toString(), socket.id);
+        socket.data.providerId = userId.toString();
+        await Provider.update(
+          { isOnline: true },
+          { where: { id: userId } }
+        ).catch((err) => {
+          console.error("❌ Failed to mark provider online:", err.message);
+        });
         console.log("🩺 Provider registered for calls:", userId);
       } else {
         users.set(userId.toString(), socket.id);
@@ -224,7 +239,7 @@ module.exports = (io) => {
     // =========================
     // DISCONNECT
     // =========================
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("🔴 Disconnected:", socket.id);
 
       for (const [key, value] of users.entries()) {
@@ -232,7 +247,15 @@ module.exports = (io) => {
       }
 
       for (const [key, value] of providers.entries()) {
-        if (value === socket.id) providers.delete(key);
+        if (value === socket.id) {
+          providers.delete(key);
+          await Provider.update(
+            { isOnline: false },
+            { where: { id: key } }
+          ).catch((err) => {
+            console.error("❌ Failed to mark provider offline:", err.message);
+          });
+        }
       }
     });
   });
