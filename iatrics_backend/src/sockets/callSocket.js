@@ -10,6 +10,60 @@ const {
 const PLATFORM_COMMISSION = 0.2;
 const PROVIDER_SHARE = 0.8;
 
+let consultationColumns;
+
+async function getConsultationColumns() {
+  if (consultationColumns) return consultationColumns;
+
+  const queryInterface = Consultation.sequelize.getQueryInterface();
+  consultationColumns = await queryInterface.describeTable(
+    Consultation.getTableName()
+  );
+
+  return consultationColumns;
+}
+
+async function createCallConsultation({ userId, providerId, channelName }) {
+  const columns = await getConsultationColumns();
+  const now = new Date();
+  const row = {};
+
+  if (columns.userId) row.userId = userId;
+  if (columns.providerId) row.providerId = providerId;
+  if (columns.channelName) row.channelName = channelName;
+  if (columns.type) row.type = "instant";
+  if (columns.status) row.status = "active";
+  if (columns.duration) row.duration = 0;
+  if (columns.price) row.price = 0;
+  if (columns.fee) row.fee = 0;
+  if (columns.cost) row.cost = 0;
+  if (columns.createdAt) row.createdAt = now;
+  if (columns.updatedAt) row.updatedAt = now;
+
+  if (!Object.keys(row).length) return;
+
+  await Consultation.sequelize
+    .getQueryInterface()
+    .bulkInsert(Consultation.getTableName(), [row]);
+}
+
+async function markCallEnded(channelName) {
+  const columns = await getConsultationColumns();
+
+  if (!columns.channelName || !columns.status) return;
+
+  const values = {
+    status: "completed",
+  };
+
+  if (columns.endedAt) values.endedAt = new Date();
+  if (columns.updatedAt) values.updatedAt = new Date();
+
+  await Consultation.sequelize
+    .getQueryInterface()
+    .bulkUpdate(Consultation.getTableName(), values, { channelName });
+}
+
 module.exports = (io) => {
   const users = new Map();
   const providers = new Map();
@@ -66,13 +120,10 @@ module.exports = (io) => {
       const { userId, providerId, channelName } = data;
 
       try {
-        await Consultation.create({
+        await createCallConsultation({
           userId,
           providerId,
           channelName,
-          status: "active",
-          duration: 0,
-          price: 0,
         });
       } catch (err) {
         console.error("❌ Failed to create call consultation:", err.message);
@@ -223,17 +274,7 @@ module.exports = (io) => {
     // =========================
     socket.on("end-call", async (data) => {
       try {
-        const session = await Consultation.findOne({
-          where: { channelName: data.channelName },
-        });
-
-        if (session) {
-          await session.update({
-            status: "completed",
-            endedAt: new Date(),
-          });
-        }
-
+        await markCallEnded(data.channelName);
         io.emit("call-ended", data.channelName);
       } catch (err) {
         console.error("❌ Failed to end call:", err.message);
