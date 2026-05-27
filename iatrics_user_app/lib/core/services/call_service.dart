@@ -8,8 +8,8 @@ class CallService {
 
   CallService._internal();
 
-  late SocketService socket;
-  late GlobalKey<NavigatorState> navKey;
+  SocketService socket = SocketService.instance;
+  GlobalKey<NavigatorState>? navKey;
 
   // ============================
   // INITIALIZE
