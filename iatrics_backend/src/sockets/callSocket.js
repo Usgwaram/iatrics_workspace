@@ -222,18 +222,23 @@ module.exports = (io) => {
     // END CALL
     // =========================
     socket.on("end-call", async (data) => {
-      const session = await Consultation.findOne({
-        where: { channelName: data.channelName },
-      });
-
-      if (session) {
-        await session.update({
-          status: "completed",
-          endedAt: new Date(),
+      try {
+        const session = await Consultation.findOne({
+          where: { channelName: data.channelName },
         });
-      }
 
-      io.emit("call-ended", data.channelName);
+        if (session) {
+          await session.update({
+            status: "completed",
+            endedAt: new Date(),
+          });
+        }
+
+        io.emit("call-ended", data.channelName);
+      } catch (err) {
+        console.error("❌ Failed to end call:", err.message);
+        io.emit("call-ended", data.channelName);
+      }
     });
 
     // =========================

@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../../core/call/call_service.dart';
 import '../../services/agora_service.dart';
+import '../../utils/network_config.dart';
 
 class VideoCallScreen extends StatefulWidget {
   final String channelName;
@@ -21,13 +24,15 @@ class VideoCallScreen extends StatefulWidget {
 }
 
 class _VideoCallScreenState extends State<VideoCallScreen> {
-  late RtcEngine engine;
+  RtcEngine? engine;
 
   int? remoteUid;
 
+  bool isInitializing = true;
   bool muted = false;
   bool speakerOn = true;
   bool videoEnabled = true;
+  String? setupError;
 
   Timer? callTimer;
   int seconds = 0;
@@ -45,30 +50,61 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   }
 
   Future<void> setupCall() async {
-    await AgoraService.instance.init();
+    try {
+      await AgoraService.instance.init();
 
-    engine = AgoraService.instance.engine;
+      final rtcEngine = AgoraService.instance.engine;
+      engine = rtcEngine;
 
-    engine.registerEventHandler(
-      RtcEngineEventHandler(
-        onUserJoined: (connection, uid, elapsed) {
-          if (!mounted) return;
+      rtcEngine.registerEventHandler(
+        RtcEngineEventHandler(
+          onUserJoined: (connection, uid, elapsed) {
+            if (!mounted) return;
 
-          setState(() {
-            remoteUid = uid;
-          });
-        },
-        onUserOffline: (connection, uid, reason) {
-          endCall();
-        },
+            setState(() {
+              remoteUid = uid;
+            });
+          },
+          onUserOffline: (connection, uid, reason) {
+            endCall();
+          },
+        ),
+      );
+
+      final token = await fetchAgoraToken();
+
+      await AgoraService.instance.joinChannel(
+        token: token,
+        channelName: widget.channelName,
+        uid: widget.uid,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        isInitializing = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        setupError = error.toString();
+        isInitializing = false;
+      });
+    }
+  }
+
+  Future<String> fetchAgoraToken() async {
+    final response = await http.get(
+      Uri.parse(
+        "${NetworkConfig.baseUrl}/api/agora/token?channel=${widget.channelName}&uid=${widget.uid}",
       ),
     );
 
-    await AgoraService.instance.joinChannel(
-      token: "",
-      channelName: widget.channelName,
-      uid: widget.uid,
-    );
+    if (response.statusCode != 200) {
+      throw StateError('Unable to fetch Agora token');
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['token'] as String;
   }
 
   // ============================
@@ -109,31 +145,40 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   // CONTROLS
   // ============================
   void toggleMute() {
+    final rtcEngine = engine;
+    if (rtcEngine == null) return;
+
     setState(() {
       muted = !muted;
     });
 
-    engine.muteLocalAudioStream(muted);
+    rtcEngine.muteLocalAudioStream(muted);
   }
 
   void toggleSpeaker() {
+    final rtcEngine = engine;
+    if (rtcEngine == null) return;
+
     setState(() {
       speakerOn = !speakerOn;
     });
 
-    engine.setEnableSpeakerphone(speakerOn);
+    rtcEngine.setEnableSpeakerphone(speakerOn).catchError((_) {});
   }
 
   void switchCamera() {
-    engine.switchCamera();
+    engine?.switchCamera();
   }
 
   void toggleVideo() {
+    final rtcEngine = engine;
+    if (rtcEngine == null) return;
+
     setState(() {
       videoEnabled = !videoEnabled;
     });
 
-    engine.muteLocalVideoStream(!videoEnabled);
+    rtcEngine.muteLocalVideoStream(!videoEnabled);
   }
 
   Future<void> endCall() async {
@@ -151,15 +196,47 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   // ============================
   @override
   Widget build(BuildContext context) {
+    final rtcEngine = engine;
+
     return Scaffold(
       backgroundColor: Colors.black,
+      appBar: setupError == null
+          ? null
+          : AppBar(
+              title: const Text("Video Call"),
+            ),
       body: Stack(
         children: [
+          if (setupError != null)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  setupError!,
+                  style: const TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          else if (isInitializing || rtcEngine == null)
+            const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    "Connecting video...",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            )
           // REMOTE VIDEO
-          if (remoteUid != null)
+          else if (remoteUid != null)
             AgoraVideoView(
               controller: VideoViewController.remote(
-                rtcEngine: engine,
+                rtcEngine: rtcEngine,
                 canvas: VideoCanvas(uid: remoteUid),
                 connection: RtcConnection(
                   channelId: widget.channelName,
@@ -178,69 +255,72 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             ),
 
           // LOCAL PREVIEW
-          Positioned(
-            top: 40,
-            right: 20,
-            child: SizedBox(
-              width: 100,
-              height: 150,
-              child: AgoraVideoView(
-                controller: VideoViewController(
-                  rtcEngine: engine,
-                  canvas: const VideoCanvas(uid: 0),
+          if (rtcEngine != null && setupError == null)
+            Positioned(
+              top: 40,
+              right: 20,
+              child: SizedBox(
+                width: 100,
+                height: 150,
+                child: AgoraVideoView(
+                  controller: VideoViewController(
+                    rtcEngine: rtcEngine,
+                    canvas: const VideoCanvas(uid: 0),
+                  ),
                 ),
               ),
             ),
-          ),
 
           // TIMER
-          Positioned(
-            top: 40,
-            left: 20,
-            child: Text(
-              formatTime(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
+          if (setupError == null)
+            Positioned(
+              top: 40,
+              left: 20,
+              child: Text(
+                formatTime(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
               ),
             ),
-          ),
 
           // CONTROLS
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                iconBtn(
-                  Icons.mic,
-                  toggleMute,
-                  active: !muted,
-                ),
-                iconBtn(
-                  Icons.volume_up,
-                  toggleSpeaker,
-                  active: speakerOn,
-                ),
-                iconBtn(
-                  Icons.switch_camera,
-                  switchCamera,
-                ),
-                iconBtn(
-                  Icons.videocam,
-                  toggleVideo,
-                  active: videoEnabled,
-                ),
-                iconBtn(
-                  Icons.call_end,
-                  endCall,
-                  color: Colors.red,
-                ),
-              ],
+          if (setupError == null)
+            Positioned(
+              bottom: 40,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  iconBtn(
+                    Icons.mic,
+                    toggleMute,
+                    active: !muted,
+                  ),
+                  iconBtn(
+                    Icons.volume_up,
+                    toggleSpeaker,
+                    active: speakerOn,
+                  ),
+                  iconBtn(
+                    Icons.switch_camera,
+                    switchCamera,
+                  ),
+                  iconBtn(
+                    Icons.videocam,
+                    toggleVideo,
+                    active: videoEnabled,
+                  ),
+                  iconBtn(
+                    Icons.call_end,
+                    endCall,
+                    color: Colors.red,
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

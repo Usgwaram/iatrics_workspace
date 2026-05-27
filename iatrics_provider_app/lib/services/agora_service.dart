@@ -4,6 +4,10 @@ class AgoraService {
   AgoraService._();
 
   static final AgoraService instance = AgoraService._();
+  static const _agoraAppId = String.fromEnvironment(
+    'AGORA_APP_ID',
+    defaultValue: '114a1c0095cc4175ada6e0b2082d7c3d',
+  );
 
   RtcEngine? _engine;
   bool _initialized = false;
@@ -15,7 +19,7 @@ class AgoraService {
 
     await _engine!.initialize(
       const RtcEngineContext(
-        appId: "114a1c0095cc4175ada6e0b2082d7c3d",
+        appId: _agoraAppId,
       ),
     );
 

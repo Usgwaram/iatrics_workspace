@@ -24,23 +24,67 @@ async function addConstraintIfMissing(queryInterface, tableName, constraintName,
   }
 }
 
+async function addColumnIfMissing(queryInterface, tableName, table, columnName, definition) {
+  if (!table[columnName]) {
+    await queryInterface.addColumn(tableName, columnName, definition);
+    console.log(`Added ${tableName}.${columnName}`);
+  } else {
+    console.log(`${tableName}.${columnName} already exists`);
+  }
+}
+
 async function main() {
   const queryInterface = db.sequelize.getQueryInterface();
+  const Sequelize = db.Sequelize;
+  const tableName = "Consultations";
+  const table = await queryInterface.describeTable(tableName);
+
+  await addColumnIfMissing(queryInterface, tableName, table, "type", {
+    type: Sequelize.STRING,
+  });
+  await addColumnIfMissing(queryInterface, tableName, table, "channelName", {
+    type: Sequelize.STRING,
+  });
+  await addColumnIfMissing(queryInterface, tableName, table, "symptoms", {
+    type: Sequelize.TEXT,
+  });
+  await addColumnIfMissing(queryInterface, tableName, table, "appointmentDate", {
+    type: Sequelize.DATEONLY,
+  });
+  await addColumnIfMissing(queryInterface, tableName, table, "appointmentTime", {
+    type: Sequelize.STRING,
+  });
+  await addColumnIfMissing(queryInterface, tableName, table, "duration", {
+    type: Sequelize.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  });
+  await addColumnIfMissing(queryInterface, tableName, table, "fee", {
+    type: Sequelize.FLOAT,
+  });
+  await addColumnIfMissing(queryInterface, tableName, table, "price", {
+    type: Sequelize.FLOAT,
+  });
+  await addColumnIfMissing(queryInterface, tableName, table, "status", {
+    type: Sequelize.STRING,
+    allowNull: false,
+    defaultValue: "pending",
+  });
 
   await dropConstraintIfExists(
     queryInterface,
-    "Consultations",
+    tableName,
     "Consultations_userId_fkey"
   );
   await dropConstraintIfExists(
     queryInterface,
-    "Consultations",
+    tableName,
     "Consultations_providerId_fkey"
   );
 
   await addConstraintIfMissing(
     queryInterface,
-    "Consultations",
+    tableName,
     "Consultations_userId_fkey",
     {
       fields: ["userId"],
@@ -56,7 +100,7 @@ async function main() {
 
   await addConstraintIfMissing(
     queryInterface,
-    "Consultations",
+    tableName,
     "Consultations_providerId_fkey",
     {
       fields: ["providerId"],
