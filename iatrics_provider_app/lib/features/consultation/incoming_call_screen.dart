@@ -7,11 +7,13 @@ import 'video_call_screen.dart';
 class IncomingCallScreen extends StatefulWidget {
   final String channelName;
   final int callerId;
+  final int providerId;
 
   const IncomingCallScreen({
     super.key,
     required this.channelName,
     required this.callerId,
+    required this.providerId,
   });
 
   @override
@@ -61,7 +63,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
       MaterialPageRoute(
         builder: (_) => VideoCallScreen(
           channelName: widget.channelName,
-          uid: widget.callerId,
+          uid: widget.providerId,
         ),
       ),
     );

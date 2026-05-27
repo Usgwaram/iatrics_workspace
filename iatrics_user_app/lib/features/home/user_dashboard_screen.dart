@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/socket_manager.dart';
+import '../consultation/video_call_screen.dart';
 import '../consultation/user_consultation_history.dart';
 import '../doctors/available_doctors_screen.dart';
 import '../doctors/doctor_service.dart';
@@ -22,6 +23,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   final SocketManager socketManager = SocketManager.instance;
   final DoctorService doctorService = DoctorService();
   bool isCalling = false;
+  final joinedChannels = <String>{};
 
   @override
   void initState() {
@@ -35,6 +37,21 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     // Listen for call events
     socketManager.onCallAccepted((data) {
       debugPrint("Call accepted: $data");
+      final channelName = data['channelName']?.toString();
+      final uid = int.tryParse(widget.userId) ?? 1;
+
+      if (channelName == null || joinedChannels.contains(channelName)) return;
+      joinedChannels.add(channelName);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VideoCallScreen(
+            channelName: channelName,
+            uid: uid,
+          ),
+        ),
+      );
     });
 
     socketManager.onCallRejected((data) {

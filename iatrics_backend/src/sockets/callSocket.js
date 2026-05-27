@@ -32,7 +32,7 @@ async function createCallConsultation({ userId, providerId, channelName }) {
   if (columns.providerId) row.providerId = providerId;
   if (columns.channelName) row.channelName = channelName;
   if (columns.type) row.type = "instant";
-  if (columns.status) row.status = "active";
+  if (columns.status) row.status = "pending";
   if (columns.duration) row.duration = 0;
   if (columns.price) row.price = 0;
   if (columns.fee) row.fee = 0;

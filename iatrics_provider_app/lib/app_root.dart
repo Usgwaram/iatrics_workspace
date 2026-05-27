@@ -47,6 +47,9 @@ class _AppRootState extends State<AppRoot> with WidgetsBindingObserver {
       final callerId = int.tryParse(data["callerId"]?.toString() ?? "") ??
           int.tryParse(data["userId"]?.toString() ?? "") ??
           0;
+      final providerId = int.tryParse(data["providerId"]?.toString() ?? "") ??
+          int.tryParse(widget.userId) ??
+          0;
 
       Navigator.push(
         context,
@@ -54,6 +57,7 @@ class _AppRootState extends State<AppRoot> with WidgetsBindingObserver {
           builder: (_) => IncomingCallScreen(
             channelName: channel,
             callerId: callerId,
+            providerId: providerId,
           ),
         ),
       );

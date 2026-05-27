@@ -30,6 +30,8 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
           builder: (_) => IncomingCallScreen(
             channelName: data['channelName'],
             callerId: int.parse(data['callerId'].toString()),
+            providerId: int.tryParse(data['providerId']?.toString() ?? '') ??
+                widget.providerId,
           ),
         ),
       );
