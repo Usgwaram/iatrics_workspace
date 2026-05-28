@@ -44,7 +44,14 @@ class AgoraService {
       token: token,
       channelId: channelName,
       uid: uid,
-      options: const ChannelMediaOptions(),
+      options: const ChannelMediaOptions(
+        channelProfile: ChannelProfileType.channelProfileCommunication,
+        clientRoleType: ClientRoleType.clientRoleBroadcaster,
+        publishCameraTrack: true,
+        publishMicrophoneTrack: true,
+        autoSubscribeAudio: true,
+        autoSubscribeVideo: true,
+      ),
     );
   }
 

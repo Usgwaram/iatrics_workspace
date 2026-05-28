@@ -1,6 +1,7 @@
 const {
   Consultation,
   Provider,
+  User,
   UserWallet,
   ProviderWallet,
   PlatformWallet,
@@ -27,9 +28,13 @@ async function createCallConsultation({ userId, providerId, channelName }) {
   const columns = await getConsultationColumns();
   const now = new Date();
   const row = {};
+  const [userExists, providerExists] = await Promise.all([
+    columns.userId ? User.count({ where: { id: userId } }) : 0,
+    columns.providerId ? Provider.count({ where: { id: providerId } }) : 0,
+  ]);
 
-  if (columns.userId) row.userId = userId;
-  if (columns.providerId) row.providerId = providerId;
+  if (columns.userId && userExists) row.userId = userId;
+  if (columns.providerId && providerExists) row.providerId = providerId;
   if (columns.channelName) row.channelName = channelName;
   if (columns.type) row.type = "instant";
   if (columns.duration) row.duration = 0;

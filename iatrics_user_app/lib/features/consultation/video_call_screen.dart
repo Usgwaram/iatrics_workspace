@@ -92,7 +92,14 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         token: token,
         channelId: widget.channelName,
         uid: widget.uid,
-        options: const ChannelMediaOptions(),
+        options: const ChannelMediaOptions(
+          channelProfile: ChannelProfileType.channelProfileCommunication,
+          clientRoleType: ClientRoleType.clientRoleBroadcaster,
+          publishCameraTrack: true,
+          publishMicrophoneTrack: true,
+          autoSubscribeAudio: true,
+          autoSubscribeVideo: true,
+        ),
       );
 
       if (!mounted) return;
