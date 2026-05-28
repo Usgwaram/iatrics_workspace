@@ -32,7 +32,6 @@ async function createCallConsultation({ userId, providerId, channelName }) {
   if (columns.providerId) row.providerId = providerId;
   if (columns.channelName) row.channelName = channelName;
   if (columns.type) row.type = "instant";
-  if (columns.status) row.status = "pending";
   if (columns.duration) row.duration = 0;
   if (columns.price) row.price = 0;
   if (columns.fee) row.fee = 0;
@@ -50,14 +49,14 @@ async function createCallConsultation({ userId, providerId, channelName }) {
 async function markCallEnded(channelName) {
   const columns = await getConsultationColumns();
 
-  if (!columns.channelName || !columns.status) return;
+  if (!columns.channelName) return;
 
-  const values = {
-    status: "completed",
-  };
+  const values = {};
 
   if (columns.endedAt) values.endedAt = new Date();
   if (columns.updatedAt) values.updatedAt = new Date();
+
+  if (!Object.keys(values).length) return;
 
   await Consultation.sequelize
     .getQueryInterface()

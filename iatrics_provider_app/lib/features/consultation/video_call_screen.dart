@@ -58,12 +58,21 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
 
       rtcEngine.registerEventHandler(
         RtcEngineEventHandler(
+          onJoinChannelSuccess: (connection, elapsed) {
+            debugPrint(
+              "Agora provider joined ${connection.channelId} as ${widget.uid}",
+            );
+          },
           onUserJoined: (connection, uid, elapsed) {
+            debugPrint("Agora provider saw remote uid $uid");
             if (!mounted) return;
 
             setState(() {
               remoteUid = uid;
             });
+          },
+          onError: (err, msg) {
+            debugPrint("Agora provider error $err $msg");
           },
           onUserOffline: (connection, uid, reason) {
             endCall();
@@ -265,7 +274,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                 child: AgoraVideoView(
                   controller: VideoViewController(
                     rtcEngine: rtcEngine,
-                    canvas: const VideoCanvas(uid: 0),
+                    canvas: VideoCanvas(uid: widget.uid),
                   ),
                 ),
               ),

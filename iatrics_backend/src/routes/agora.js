@@ -4,7 +4,12 @@ const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
 const { agoraAppId, agoraCertificate } = require("../config/secrets");
 
 router.get("/token", (req, res) => {
-  const { channel, uid } = req.query;
+  const channel = req.query.channel || req.query.channelName;
+  const { uid } = req.query;
+
+  if (!channel || !uid) {
+    return res.status(400).json({ message: "channel and uid required" });
+  }
 
   const appId = agoraAppId();
   const appCertificate = agoraCertificate();
