@@ -23,7 +23,7 @@ class CallService {
 
     // Listen for incoming calls
     socket.on("incoming-call", (data) {
-      navKey.currentState?.push(
+      navKey?.currentState?.push(
         MaterialPageRoute(
           builder: (_) => IncomingCallScreen(
             channelName: data["channelName"],
