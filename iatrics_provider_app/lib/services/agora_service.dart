@@ -24,6 +24,7 @@ class AgoraService {
     );
 
     await _engine!.enableVideo();
+    await _engine!.startPreview();
 
     _initialized = true;
   }

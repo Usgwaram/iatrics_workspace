@@ -1,7 +1,6 @@
 const {
   Consultation,
   Provider,
-  User,
   UserWallet,
   ProviderWallet,
   PlatformWallet,
@@ -22,33 +21,6 @@ async function getConsultationColumns() {
   );
 
   return consultationColumns;
-}
-
-async function createCallConsultation({ userId, providerId, channelName }) {
-  const columns = await getConsultationColumns();
-  const now = new Date();
-  const row = {};
-  const [userExists, providerExists] = await Promise.all([
-    columns.userId ? User.count({ where: { id: userId } }) : 0,
-    columns.providerId ? Provider.count({ where: { id: providerId } }) : 0,
-  ]);
-
-  if (columns.userId && userExists) row.userId = userId;
-  if (columns.providerId && providerExists) row.providerId = providerId;
-  if (columns.channelName) row.channelName = channelName;
-  if (columns.type) row.type = "instant";
-  if (columns.duration) row.duration = 0;
-  if (columns.price) row.price = 0;
-  if (columns.fee) row.fee = 0;
-  if (columns.cost) row.cost = 0;
-  if (columns.createdAt) row.createdAt = now;
-  if (columns.updatedAt) row.updatedAt = now;
-
-  if (!Object.keys(row).length) return;
-
-  await Consultation.sequelize
-    .getQueryInterface()
-    .bulkInsert(Consultation.getTableName(), [row]);
 }
 
 async function markCallEnded(channelName) {
@@ -120,18 +92,8 @@ module.exports = (io) => {
     // =========================
     // PLACE CALL
     // =========================
-    socket.on("place-call", async (data) => {
+    socket.on("place-call", (data) => {
       const { userId, providerId, channelName } = data;
-
-      try {
-        await createCallConsultation({
-          userId,
-          providerId,
-          channelName,
-        });
-      } catch (err) {
-        console.error("❌ Failed to create call consultation:", err.message);
-      }
 
       const providerSocket = providers.get(providerId.toString());
 

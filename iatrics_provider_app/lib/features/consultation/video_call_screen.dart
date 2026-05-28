@@ -71,6 +71,16 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
               remoteUid = uid;
             });
           },
+          onFirstRemoteVideoFrame: (connection, uid, width, height, elapsed) {
+            debugPrint(
+              "Agora provider first remote video frame uid=$uid ${width}x$height",
+            );
+          },
+          onRemoteVideoStateChanged: (connection, uid, state, reason, elapsed) {
+            debugPrint(
+              "Agora provider remote video state uid=$uid state=$state reason=$reason",
+            );
+          },
           onError: (err, msg) {
             debugPrint("Agora provider error $err $msg");
           },
@@ -274,7 +284,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                 child: AgoraVideoView(
                   controller: VideoViewController(
                     rtcEngine: rtcEngine,
-                    canvas: VideoCanvas(uid: widget.uid),
+                    canvas: const VideoCanvas(uid: 0),
                   ),
                 ),
               ),
