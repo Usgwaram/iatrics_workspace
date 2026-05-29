@@ -5,7 +5,7 @@ class NetworkConfig {
 
   static String get baseUrl {
     if (_definedBaseUrl.isNotEmpty) {
-      return _definedBaseUrl;
+      return _normalizeBaseUrl(_definedBaseUrl);
     }
 
     if (kDebugMode && kIsWeb) {
@@ -13,5 +13,18 @@ class NetworkConfig {
     }
 
     return "https://api.iatrics.ng";
+  }
+
+  static String _normalizeBaseUrl(String value) {
+    final trimmed = value.trim().replaceFirst(RegExp(r'/+$'), '');
+    final missingColonMatch = RegExp(
+      r'^(https?://\d+\.\d+\.\d+\.\d+)\.(\d+)$',
+    ).firstMatch(trimmed);
+
+    if (missingColonMatch != null) {
+      return '${missingColonMatch.group(1)}:${missingColonMatch.group(2)}';
+    }
+
+    return trimmed;
   }
 }

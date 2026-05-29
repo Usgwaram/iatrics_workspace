@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/provider_model.dart';
 import '../utils/network_config.dart';
@@ -86,10 +87,13 @@ class AuthService {
     required String email,
     required String password,
   }) async {
+    final uri = Uri.parse("$baseUrl/api/auth/login");
+    debugPrint("Provider login POST $uri");
+
     try {
       return await _client
           .post(
-            Uri.parse("$baseUrl/api/auth/login"),
+            uri,
             headers: {
               "Content-Type": "application/json",
             },
