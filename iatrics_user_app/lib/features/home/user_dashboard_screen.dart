@@ -24,6 +24,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   final DoctorService doctorService = DoctorService();
   bool isCalling = false;
   final joinedChannels = <String>{};
+  final callProviders = <String, String>{};
 
   @override
   void initState() {
@@ -49,6 +50,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           builder: (_) => VideoCallScreen(
             channelName: channelName,
             uid: uid,
+            providerId: data['providerId']?.toString() ??
+                callProviders[channelName] ??
+                '',
           ),
         ),
       );
@@ -82,6 +86,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
 
       final providerId = onlineDoctors.first['id'].toString();
       final channelName = "call_${DateTime.now().millisecondsSinceEpoch}";
+      callProviders[channelName] = providerId;
 
       socketManager.startCall(
         fromId: widget.userId,

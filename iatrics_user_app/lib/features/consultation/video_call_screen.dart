@@ -5,16 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../../core/services/call_service.dart';
+import '../../features/payment/wallet_service.dart';
+import '../../utils/auth_token.dart';
 import '../../utils/network_config.dart';
 
 class VideoCallScreen extends StatefulWidget {
   final String channelName;
   final int uid;
+  final String providerId;
 
   const VideoCallScreen({
     super.key,
     required this.channelName,
     required this.uid,
+    required this.providerId,
   });
 
   @override
@@ -30,7 +34,10 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   bool muted = false;
   bool speakerOn = true;
   bool videoEnabled = true;
+  bool isSettlingPayment = false;
+  bool paymentSettled = false;
   static const agoraAppId = String.fromEnvironment('AGORA_APP_ID');
+  final WalletService walletService = WalletService();
 
   Timer? callTimer;
   int seconds = 0;
@@ -161,7 +168,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   // SOCKET LISTENER
   // ============================
   void listenForCallEnd() {
-    CallService().onCallEnded(() {
+    CallService().onCallEnded(() async {
+      await settlePayment();
       if (mounted) Navigator.pop(context);
     });
   }
@@ -197,9 +205,51 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     rtcEngine.muteLocalVideoStream(!videoEnabled);
   }
 
-  void endCall() {
+  Future<void> settlePayment() async {
+    if (paymentSettled || isSettlingPayment) return;
+    if (widget.providerId.isEmpty) return;
+
+    final token = await AuthToken.getToken();
+    if (token == null || token.isEmpty) return;
+
+    setState(() {
+      isSettlingPayment = true;
+    });
+
+    try {
+      final result = await walletService.payProvider(
+        token: token,
+        providerId: widget.providerId,
+        channelName: widget.channelName,
+      );
+
+      paymentSettled = true;
+      debugPrint("Consultation payment settled: $result");
+    } catch (error) {
+      debugPrint("Consultation payment failed: $error");
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error.toString().replaceAll('Exception:', '').trim(),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSettlingPayment = false;
+        });
+      }
+    }
+  }
+
+  Future<void> endCall() async {
+    await settlePayment();
     CallService().endCall(widget.channelName);
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
   // ============================
@@ -291,6 +341,13 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
                   iconBtn(Icons.videocam, toggleVideo, active: videoEnabled),
                   iconBtn(Icons.call_end, endCall, color: Colors.red),
                 ],
+              ),
+            ),
+          if (isSettlingPayment)
+            Container(
+              color: Colors.black45,
+              child: const Center(
+                child: CircularProgressIndicator(),
               ),
             ),
         ],

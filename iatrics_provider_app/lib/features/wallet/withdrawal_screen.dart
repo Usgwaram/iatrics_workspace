@@ -1,12 +1,16 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../../utils/network_config.dart';
+
+import '../../services/provider_wallet_service.dart';
 
 class WithdrawalScreen extends StatefulWidget {
-  final String providerId;
+  final String token;
+  final ProviderWalletService service;
 
-  const WithdrawalScreen({super.key, required this.providerId});
+  WithdrawalScreen({
+    super.key,
+    required this.token,
+    ProviderWalletService? service,
+  }) : service = service ?? ProviderWalletService();
 
   @override
   State<WithdrawalScreen> createState() => _WithdrawalScreenState();
@@ -17,28 +21,53 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
   final bankController = TextEditingController();
   final accountNumberController = TextEditingController();
   final accountNameController = TextEditingController();
+  bool isSubmitting = false;
+
+  @override
+  void dispose() {
+    amountController.dispose();
+    bankController.dispose();
+    accountNumberController.dispose();
+    accountNameController.dispose();
+    super.dispose();
+  }
 
   Future<void> requestWithdrawal() async {
-    final res = await http.post(
-      Uri.parse("${NetworkConfig.baseUrl}/api/withdrawals/request"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "providerId": widget.providerId,
-        "amount": double.parse(amountController.text),
-        "bankCode": bankController.text,
-        "accountNumber": accountNumberController.text,
-        "accountName": accountNameController.text,
-      }),
-    );
+    if (isSubmitting) return;
 
-    if (res.statusCode == 200) {
+    setState(() {
+      isSubmitting = true;
+    });
+
+    try {
+      await widget.service.requestWithdrawal(
+        token: widget.token,
+        amount: double.parse(amountController.text),
+        bankCode: bankController.text.trim(),
+        accountNumber: accountNumberController.text.trim(),
+        accountName: accountNameController.text.trim(),
+      );
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Withdrawal requested")),
       );
-    } else {
+
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed")),
+        SnackBar(
+          content: Text(e.toString().replaceAll("Exception:", "").trim()),
+        ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -64,8 +93,10 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                 decoration: const InputDecoration(labelText: "Account Name")),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: requestWithdrawal,
-              child: const Text("Request Withdrawal"),
+              onPressed: isSubmitting ? null : requestWithdrawal,
+              child: Text(
+                isSubmitting ? "Submitting..." : "Request Withdrawal",
+              ),
             )
           ],
         ),

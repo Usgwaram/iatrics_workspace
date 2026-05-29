@@ -1,7 +1,16 @@
 const axios = require("axios");
 
-const { WalletTransaction, User } = require("../models");
+const {
+  Provider,
+  Sequelize,
+  WalletTransaction,
+  User,
+  sequelize,
+} = require("../models");
 const { paystackSecret } = require("../config/secrets");
+const walletService = require("../services/walletService");
+const { splitPayment } = require("../services/commissionService");
+const { calculateConsultationPrice } = require("../services/pricingEngine");
 
 function confirmedStatuses() {
   return ["confirmed"];
@@ -10,7 +19,15 @@ function confirmedStatuses() {
 async function calculateBalance(userId, tx = global.testTransaction || null) {
   const credits =
     (await WalletTransaction.sum("amount", {
-      where: { userId, type: "credit", status: confirmedStatuses() },
+      where: {
+        userId,
+        type: "credit",
+        status: confirmedStatuses(),
+        [Sequelize.Op.or]: [
+          { source: null },
+          { source: { [Sequelize.Op.ne]: "commission" } },
+        ],
+      },
       transaction: tx,
     })) || 0;
 
@@ -72,13 +89,22 @@ exports.topupWallet = async (req, res) => {
     };
 
     if (process.env.NODE_ENV !== "production") {
+      const reference = `wallet_topup_${Date.now()}_${req.user.id}`;
+      const result = await walletService.creditWallet({
+        userId: req.user.id,
+        amount,
+        reference,
+        source: "paystack",
+      });
+
       return res.json({
         status: true,
         message: "Mock wallet top-up initialized",
         data: {
           authorization_url: "https://mock.paystack/wallet-topup",
-          reference: `wallet_topup_${Date.now()}`,
+          reference,
           amount,
+          balance: result.balance,
           metadata,
         },
       });
@@ -117,6 +143,94 @@ exports.deductWallet = async (req, res) => {
 // ============================
 exports.creditWallet = async (req, res) => {
   return res.json({ message: "Credit endpoint working" });
+};
+
+exports.payProvider = async (req, res) => {
+  const tx = await sequelize.transaction();
+
+  try {
+    const {
+      providerId,
+      amount,
+      channelName,
+      consultationId,
+      type = "instant",
+    } = req.body;
+
+    const provider = await Provider.findByPk(providerId, { transaction: tx });
+
+    if (!provider) {
+      await tx.rollback();
+      return res.status(404).json({ error: "Provider not found" });
+    }
+
+    const chargeAmount =
+      Number.isFinite(Number(amount)) && Number(amount) > 0
+        ? Number(amount)
+        : calculateConsultationPrice({
+            specialty: provider.specialty,
+            yearsOfExperience: provider.yearsOfExperience,
+            type,
+          });
+
+    const referenceBase =
+      channelName ||
+      consultationId ||
+      `${req.user.id}_${providerId}_${Date.now()}`;
+    const reference = `CONSULT_${referenceBase}`;
+
+    const existing = await WalletTransaction.findOne({
+      where: { reference: `${reference}_USER` },
+      transaction: tx,
+      lock: tx.LOCK.UPDATE,
+    });
+
+    if (existing) {
+      const balance = await calculateBalance(req.user.id, tx);
+      await tx.commit();
+      return res.json({
+        success: true,
+        alreadyProcessed: true,
+        balance,
+      });
+    }
+
+    const debit = await walletService.debitWallet({
+      userId: req.user.id,
+      amount: chargeAmount,
+      reference: `${reference}_USER`,
+      source: "consultation",
+      tx,
+    });
+
+    const split = await splitPayment({
+      userId: req.user.id,
+      providerId,
+      amount: chargeAmount,
+      reference,
+      consultationId,
+      tx,
+    });
+
+    await tx.commit();
+
+    return res.json({
+      success: true,
+      amount: chargeAmount,
+      balance: debit.balance,
+      ...split,
+    });
+  } catch (err) {
+    await tx.rollback();
+
+    const status = err.message === "INSUFFICIENT_FUNDS" ? 402 : 500;
+    return res.status(status).json({
+      error:
+        err.message === "INSUFFICIENT_FUNDS"
+          ? "Insufficient wallet balance"
+          : err.message,
+    });
+  }
 };
 
 // ============================

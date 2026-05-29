@@ -57,6 +57,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
         builder: (_) => VideoCallScreen(
           channelName: widget.channelName,
           uid: 0,
+          providerId: '',
         ),
       ),
     );

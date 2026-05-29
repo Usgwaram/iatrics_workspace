@@ -66,6 +66,13 @@ class _FundWalletScreenState extends State<FundWalletScreen> {
         amount: amount,
       );
 
+      if (url.contains('mock.paystack')) {
+        if (!mounted) return;
+        showMessage('Wallet funded');
+        Navigator.pop(context);
+        return;
+      }
+
       await openPayment(url);
     } catch (e) {
       if (!mounted) return;

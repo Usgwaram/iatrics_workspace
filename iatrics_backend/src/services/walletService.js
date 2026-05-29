@@ -1,4 +1,5 @@
 const {
+  Sequelize,
   WalletTransaction,
 } = require("../models");
 
@@ -22,6 +23,10 @@ async function getBalance(
         userId,
         type: "credit",
         status: "confirmed",
+        [Sequelize.Op.or]: [
+          { source: null },
+          { source: { [Sequelize.Op.ne]: "commission" } },
+        ],
       },
       transaction,
     })) || 0;

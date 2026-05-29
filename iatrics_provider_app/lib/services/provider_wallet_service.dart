@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../../utils/network_config.dart';
+import '../utils/network_config.dart';
 
-class WalletService {
+class ProviderWalletService {
   final http.Client _client;
   final String baseUrl;
 
-  WalletService({
+  ProviderWalletService({
     http.Client? client,
     String? baseUrl,
   })  : _client = client ?? http.Client(),
@@ -25,58 +25,19 @@ class WalletService {
     return transactions.cast<Map<String, dynamic>>();
   }
 
-  Future<String> initializeTopUp({
-    required String token,
-    required double amount,
-  }) async {
-    final body = await _post(
-      '/api/wallet/topup',
-      token,
-      {'amount': amount},
-    );
-
-    final url = body['data']?['authorization_url'];
-    if (url is! String || url.isEmpty) {
-      throw Exception('Payment link unavailable');
-    }
-
-    return url;
-  }
-
-  Future<Map<String, dynamic>> payProvider({
-    required String token,
-    required String providerId,
-    required String channelName,
-    double? amount,
-  }) async {
-    return _post(
-      '/api/wallet/pay-provider',
-      token,
-      {
-        'providerId': providerId,
-        'channelName': channelName,
-        if (amount != null) 'amount': amount,
-      },
-    );
-  }
-
-  Future<Map<String, dynamic>> requestBankTransfer({
+  Future<Map<String, dynamic>> requestWithdrawal({
     required String token,
     required double amount,
     required String bankCode,
     required String accountNumber,
     required String accountName,
-  }) async {
-    return _post(
-      '/api/withdrawals/request',
-      token,
-      {
-        'amount': amount,
-        'bankCode': bankCode,
-        'accountNumber': accountNumber,
-        'accountName': accountName,
-      },
-    );
+  }) {
+    return _post('/api/withdrawals/request', token, {
+      'amount': amount,
+      'bankCode': bankCode,
+      'accountNumber': accountNumber,
+      'accountName': accountName,
+    });
   }
 
   Future<Map<String, dynamic>> _get(String path, String token) async {
@@ -114,7 +75,8 @@ class WalletService {
 
     if (response.statusCode >= 400) {
       throw Exception(
-          body['error'] ?? body['message'] ?? 'Wallet request failed');
+        body['error'] ?? body['message'] ?? 'Wallet request failed',
+      );
     }
 
     return body;

@@ -33,6 +33,7 @@ class AppStartup extends StatelessWidget {
 
       return ProviderDashboardScreen(
         providerId: provider.id,
+        token: auth.token ?? '',
       );
     }
 

@@ -109,7 +109,6 @@ class _UserWalletScreenState extends State<UserWalletScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => FundWalletScreen(
-                            paymentUrl: "https://paystack.com/pay/test",
                             service: service,
                           ),
                         ),

@@ -56,6 +56,7 @@ class MyApp extends StatelessWidget {
                           )
                         : ProviderDashboardScreen(
                             providerId: provider.id,
+                            token: token,
                           ),
                   )
                 : const LoginScreen(),

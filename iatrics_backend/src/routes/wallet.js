@@ -19,6 +19,9 @@ router.post("/deduct", protect, ctrl.deductWallet);
 // CREDIT
 router.post("/credit", protect, ctrl.creditWallet);
 
+// PAY PROVIDER AFTER CONSULTATION
+router.post("/pay-provider", protect, ctrl.payProvider);
+
 // ADMIN DEBUG
 router.get("/balance/:email", ctrl.getBalanceByEmail);
 
