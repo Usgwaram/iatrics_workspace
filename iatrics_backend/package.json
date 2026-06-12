@@ -5,15 +5,16 @@
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
-    "dev": "nodemon server.js",
     "start": "node server.js",
+    "staging": "cross-env NODE_ENV=staging node server.js",
+    "dev": "nodemon server.js",
     "admin:create": "node scripts/createAdmin.js",
     "seed": "node src/seeders/adminSeeder.js",
     "db:repair-consultations": "node scripts/repairConsultationSchema.js",
     "db:repair-providers": "node scripts/repairProviderSchema.js",
     "test": "jest --runInBand",
     "load:consultations": "k6 run load-tests/consultations.k6.js",
-    "stress:consultations": "K6_SCENARIO=stress k6 run load-tests/consultations.k6.js"
+    "stress:consultations": "cross-env K6_SCENARIO=stress k6 run load-tests/consultations.k6.js"
   },
   "dependencies": {
     "agora-access-token": "^2.0.4",
