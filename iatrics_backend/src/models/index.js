@@ -12,16 +12,34 @@ const config = require("../config/config")[env];
 
 const db = {};
 
-const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  {
-    ...config,
-    dialectOptions: config.dialectOptions || {},
-    logging: false,
+if (!config) {
+  throw new Error(`Missing Sequelize config for NODE_ENV=${env}`);
+}
+
+const sequelizeOptions = {
+  ...config,
+  dialectOptions: config.dialectOptions || {},
+  logging: false,
+};
+
+function connectionUrlWithRequiredSsl(connectionUrl) {
+  if (!config.dialectOptions?.ssl) return connectionUrl;
+
+  const url = new URL(connectionUrl);
+
+  if (!url.searchParams.has("ssl") && !url.searchParams.has("sslmode")) {
+    url.searchParams.set("sslmode", "require");
   }
-);
+
+  return url.toString();
+}
+
+const sequelize = config.use_env_variable
+  ? new Sequelize(
+      connectionUrlWithRequiredSsl(process.env[config.use_env_variable]),
+      sequelizeOptions
+    )
+  : new Sequelize(config.database, config.username, config.password, sequelizeOptions);
 
 fs.readdirSync(__dirname)
   .filter(

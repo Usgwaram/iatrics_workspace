@@ -3,11 +3,20 @@ require("dotenv").config();
 const envFile =
   process.env.NODE_ENV === "production"
     ? ".env.production"
+    : process.env.NODE_ENV === "staging"
+    ? ".env.staging"
     : process.env.NODE_ENV === "test"
     ? ".env.test"
     : ".env";
 
-require("dotenv").config({ path: envFile });
+require("dotenv").config({
+  path: envFile,
+  override: true,
+});
+
+console.log(`Loaded environment: ${envFile}`);
+
+require("dotenv").config({ path: envFile, override: true });
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
@@ -132,23 +141,55 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 5002;
 const HOST = process.env.HOST || "0.0.0.0";
 
+// Trust proxy (Render / Cloudflare / Load Balancer)
+app.set("trust proxy", 1);
+
+// Health endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    environment: process.env.NODE_ENV,
+    host: process.env.APP_BASE_URL,
+    timestamp: new Date().toISOString()
+  });
+});
+
 const startServer = async () => {
   try {
+    console.log("🧠 Environment:", process.env.NODE_ENV);
+    console.log("🧠 Loading:", process.env.APP_BASE_URL);
+
     console.log("🧠 Connecting DB...");
 
     await db.sequelize.authenticate();
 
-    console.log("🧠 DB connected");
+    console.log("✅ DB connected");
 
-    await db.sequelize.sync({ alter: false });
+    console.log("🧠 Syncing models...");
 
-    console.log("🧠 DB synced");
+    await db.sequelize.sync({
+      alter: false
+    });
+
+    console.log("✅ DB synced");
 
     server.listen(PORT, HOST, () => {
-      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+      console.log("");
+      console.log("🚀 Iatrics Backend Started");
+      console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+      console.log(`📍 Host: ${HOST}`);
+      console.log(`🔌 Port: ${PORT}`);
+      console.log(`🌐 Base URL: ${process.env.APP_BASE_URL}`);
+      console.log(`❤️ Health: ${process.env.APP_BASE_URL}/health`);
+      console.log("");
     });
+
   } catch (error) {
-    console.error("❌ Startup error:", error);
+    console.error("❌ Startup error");
+
+    console.error(error);
+
+    process.exit(1);
   }
 };
 
