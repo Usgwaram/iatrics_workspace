@@ -1,5 +1,8 @@
-const { Provider, Consultation } = require("../models");
+const { Provider, Consultation, User } = require("../models");
 const { calculateConsultationPrice } = require("../services/pricingEngine");
+const {
+  sendAppointmentConfirmation,
+} = require("../services/email/email.workflow");
 
 let consultationColumns;
 let consultationForeignTables;
@@ -74,6 +77,12 @@ exports.createConsultation = async (req, res) => {
       returning: Object.keys(payload),
     });
 
+    await sendAppointmentConfirmation({
+      consultation,
+      user: req.user,
+      provider,
+    });
+
     return res.status(201).json({
       message: "Consultation created",
       consultation,
@@ -144,6 +153,14 @@ async function createConsultationWithOptionalFields({
     const consultation = await Consultation.create(payload, {
       fields: Object.keys(payload),
       returning: Object.keys(payload),
+    });
+
+    const user = req.user?.email ? req.user : await User.findByPk(req.user.id);
+
+    await sendAppointmentConfirmation({
+      consultation,
+      user,
+      provider,
     });
 
     return res.status(201).json({

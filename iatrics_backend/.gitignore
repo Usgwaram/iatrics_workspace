@@ -1,1 +1,15 @@
+.DS_Store
+
+# Dependencies and generated output
+node_modules/
+work/
+coverage/
+uploads/
+
+# Environment files
 .env
+.env.*
+!.env.example
+
+# Temporary migration backups
+*.bad-model-backup

@@ -13,5 +13,10 @@ module.exports = (sequelize, DataTypes) => {
     status: DataTypes.STRING,
   });
 
+  Consultation.associate = (models) => {
+    Consultation.belongsTo(models.User, { foreignKey: "userId" });
+    Consultation.belongsTo(models.Provider, { foreignKey: "providerId" });
+  };
+
   return Consultation;
 };

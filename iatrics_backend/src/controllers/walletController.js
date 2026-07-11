@@ -11,6 +11,10 @@ const { paystackSecret } = require("../config/secrets");
 const walletService = require("../services/walletService");
 const { splitPayment } = require("../services/commissionService");
 const { calculateConsultationPrice } = require("../services/pricingEngine");
+const {
+  sendPaymentReceiptEmail,
+  sendWalletTopUpEmail,
+} = require("../services/email/email.workflow");
 
 function confirmedStatuses() {
   return ["confirmed"];
@@ -95,6 +99,14 @@ exports.topupWallet = async (req, res) => {
         amount,
         reference,
         source: "paystack",
+      });
+
+      await sendWalletTopUpEmail({
+        user: req.user,
+        amount,
+        reference,
+        balance: result.balance,
+        paymentMethod: "Mock Paystack",
       });
 
       return res.json({
@@ -213,6 +225,15 @@ exports.payProvider = async (req, res) => {
     });
 
     await tx.commit();
+
+    await sendPaymentReceiptEmail({
+      user: req.user,
+      provider,
+      amount: chargeAmount,
+      reference,
+      consultationId,
+      split,
+    });
 
     return res.json({
       success: true,

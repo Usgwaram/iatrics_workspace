@@ -1,5 +1,9 @@
 // controllers/onboardingController.js
 const { Provider } = require("../models");
+const {
+  sendProviderApprovedEmail,
+  sendProviderDocumentsRequiredEmail,
+} = require("../services/email/email.workflow");
 
 exports.updateProfile = async (req, res) => {
   try {
@@ -44,6 +48,12 @@ exports.uploadDocuments = async (req, res) => {
     provider.onboardingStep = "DOCUMENTS_SUBMITTED";
 
     await provider.save();
+
+    await sendProviderDocumentsRequiredEmail(provider, [
+      "Professional licence",
+      "Government-issued identification",
+      "Relevant practice credentials",
+    ]);
 
     return res.json({ success: true, provider });
   } catch (err) {
@@ -101,6 +111,8 @@ exports.approveProvider = async (req, res) => {
     provider.isApproved = true;
 
     await provider.save();
+
+    await sendProviderApprovedEmail(provider);
 
     return res.json({ success: true, provider });
   } catch (err) {

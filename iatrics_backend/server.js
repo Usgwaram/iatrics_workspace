@@ -41,6 +41,7 @@ const doctorRoutes = require("./src/routes/doctorRoutes");
 const pricingRoutes = require("./src/routes/pricingRoutes");
 const uploadRoutes = require("./src/routes/uploadRoutes");
 const feedbackRoutes = require("./src/routes/feedbackRoutes");
+const emailJobRoutes = require("./src/routes/emailJobRoutes");
 const { assertProductionSecrets } = require("./src/config/secrets");
 // security (safe fallback if missing in prod)
 let helmet, rateLimit, xss, hpp, cron;
@@ -126,6 +127,7 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/pricing", pricingRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/jobs/email", emailJobRoutes);
 // health check
 app.get("/", (req, res) => {
   res.send("🚀 Iatrics API + Socket Running");

@@ -6,6 +6,10 @@ const {
   Withdrawal,
   sequelize,
 } = require("../models");
+const {
+  sendProviderApprovedEmail,
+  sendWithdrawalSuccessfulEmail,
+} = require("../services/email/email.workflow");
 
 const settledTransactionStatuses = ["confirmed"];
 
@@ -98,6 +102,8 @@ exports.approveProvider = async (req, res) => {
       onboardingStep: "APPROVED",
     });
 
+    await sendProviderApprovedEmail(provider);
+
     return res.json({
       message: "Provider approved",
       provider,
@@ -165,6 +171,8 @@ exports.approveWithdrawal = async (req, res) => {
     }
 
     await t.commit();
+
+    await sendWithdrawalSuccessfulEmail(withdrawal);
 
     return res.json({ message: "Withdrawal approved" });
   } catch (err) {

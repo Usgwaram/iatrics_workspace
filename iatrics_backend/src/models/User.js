@@ -39,6 +39,14 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: false,
     },
 
+    emailVerifiedAt: DataTypes.DATE,
+    emailVerificationTokenHash: DataTypes.STRING,
+    emailVerificationExpiresAt: DataTypes.DATE,
+    emailVerificationSentAt: DataTypes.DATE,
+    passwordResetTokenHash: DataTypes.STRING,
+    passwordResetExpiresAt: DataTypes.DATE,
+    passwordResetRequestedAt: DataTypes.DATE,
+
     // 💰 Wallet (protected field)
     walletBalance: {
       type: DataTypes.FLOAT,
@@ -55,6 +63,7 @@ module.exports = (sequelize, DataTypes) => {
 
   User.associate = (models) => {
     User.hasOne(models.Provider, { foreignKey: "userId" });
+    User.hasMany(models.Consultation, { foreignKey: "userId" });
   };
 
   return User;

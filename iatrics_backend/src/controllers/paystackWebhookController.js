@@ -4,6 +4,7 @@ const {
   sequelize,
   WalletTransaction,
   User,
+  Provider,
 } = require("../models");
 
 const walletService = require("../services/walletService");
@@ -11,6 +12,10 @@ const {
   splitPayment,
 } = require("../services/commissionService");
 const { paystackSecret } = require("../config/secrets");
+const {
+  sendPaymentReceiptEmail,
+  sendWalletTopUpEmail,
+} = require("../services/email/email.workflow");
 
 // =====================================
 // PAYSTACK WEBHOOK
@@ -124,8 +129,15 @@ exports.handleWebhook = async (req, res) => {
       });
     }
 
+    let split = null;
+    let provider = null;
+
     if (providerId) {
-      await splitPayment({
+      provider = await Provider.findByPk(providerId, {
+        transaction: tx,
+      });
+
+      split = await splitPayment({
         userId: user.id,
         providerId,
         amount,
@@ -150,6 +162,25 @@ exports.handleWebhook = async (req, res) => {
     // COMMIT
     // =====================================
     await tx.commit();
+
+    if (providerId) {
+      await sendPaymentReceiptEmail({
+        user,
+        provider,
+        amount,
+        reference,
+        consultationId,
+        split,
+      });
+    } else {
+      await sendWalletTopUpEmail({
+        user,
+        amount,
+        reference,
+        balance: await walletService.getBalance(user.id),
+        paymentMethod: "Paystack",
+      });
+    }
 
     console.log(
       `💰 Wallet credited: ₦${amount}`
